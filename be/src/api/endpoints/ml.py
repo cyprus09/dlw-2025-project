@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter
 
-from schemas.ml_request import MLRequest, MLResponse
-from services.ml_service import MLService
+from src.schemas.ml_request import MLRequest, MLResponse
+from src.services.ml_service import MLService
 
 router = APIRouter()
 
