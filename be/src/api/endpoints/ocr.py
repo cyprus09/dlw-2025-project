@@ -51,3 +51,44 @@ async def upload_and_analyze(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload-pdf", response_model=OCRResponse, status_code=200)
+async def upload_pdf(file: UploadFile = File(...)):
+    """
+    Upload a PDF and extract text using pymupdf4llm.
+    """
+    try:
+        result = await process_document(file)
+        return OCRResponse(
+            filename=result["filename"],
+            ocr_text=result["ocr_text"]
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/analyze-pdf", response_model=UploadAnalyzeResponse, status_code=200)
+async def analyze_pdf(
+    file: UploadFile = File(...),
+    query: str = Form(...)
+):
+    """
+    Upload a PDF, extract text, and analyze it using OpenAI.
+    """
+    try:
+        pdf_result = await process_document(file)
+        analysis_result = await analyze_text_with_query(query, pdf_result["ocr_text"])
+
+        return UploadAnalyzeResponse(
+            filename=pdf_result["filename"],
+            ocr_text=pdf_result["ocr_text"],
+            query=query,
+            analysis=analysis_result["response"],
+            usage=analysis_result["usage"]
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
