@@ -13,3 +13,4 @@ async def predict(request: MLRequest) -> MLResponse:
     """Process input through ML model and return prediction."""
     result, confidence = await MLService.process_input(request.input_data)
     return MLResponse(result=result, confidence=confidence)
+
