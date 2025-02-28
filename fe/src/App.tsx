@@ -1,10 +1,13 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import "./App.css";
 
 function App() {
     const [activeTab, setActiveTab] = useState("home");
+    const { scrollYProgress } = useScroll();
+    const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+    const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -81,6 +84,7 @@ function App() {
                         <Button
                             variant="default"
                             size="default"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                             Get Started
                         </Button>
@@ -89,7 +93,7 @@ function App() {
             </nav>
 
             {/* Hero Section */}
-            <section className="py-20 md:py-32 container mx-auto px-4">
+            <section className="py-20 md:py-32 container mx-auto px-4 relative overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -97,9 +101,25 @@ function App() {
                         transition={{ duration: 0.7 }}
                         className="space-y-6"
                     >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            transition={{ duration: 0.5 }}
+                            className="inline-flex items-center rounded-full px-4 py-1 text-sm bg-primary/10 text-primary mb-4"
+                        >
+                            <span className="mr-2">🌍</span>
+                            Sustainable Future Starts Here
+                        </motion.div>
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
                             Verify Carbon Credits with{" "}
-                            <span className="text-primary">Transparency</span>
+                            <motion.span
+                                className="text-primary inline-block"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.5 }}
+                            >
+                                Transparency
+                            </motion.span>
                         </h1>
                         <p className="text-lg text-muted-foreground">
                             Our AI-powered platform detects discrepancies
@@ -108,40 +128,89 @@ function App() {
                             genuine environmental impact.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Button
-                                size="lg"
-                                className="px-8"
+                            <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                Verify Claims
-                            </Button>
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                className="px-8"
+                                <Button
+                                    size="lg"
+                                    className="px-8 bg-primary hover:bg-primary/90 text-primary-foreground"
+                                >
+                                    <span className="mr-2">🌟</span>
+                                    Verify Claims
+                                </Button>
+                            </motion.div>
+                            <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                Learn More
-                            </Button>
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="px-8 border-primary text-primary hover:bg-primary/10"
+                                >
+                                    <span className="mr-2">📚</span>
+                                    Learn More
+                                </Button>
+                            </motion.div>
                         </div>
                     </motion.div>
 
                     <motion.div
+                        style={{ scale, opacity }}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.7, delay: 0.2 }}
                         className="relative"
                     >
-                        <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center overflow-hidden animate-float">
-                            <div className="absolute w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1),transparent_70%)]"></div>
-                            <div className="relative w-3/4 h-3/4 rounded-xl bg-card p-6 shadow-lg">
+                        <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-primary/30 flex items-center justify-center overflow-hidden">
+                            <motion.div
+                                className="absolute w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1),transparent_70%)]"
+                                animate={{
+                                    rotate: 360,
+                                    scale: [1, 1.1, 1],
+                                }}
+                                transition={{
+                                    duration: 20,
+                                    repeat: Infinity,
+                                    repeatType: "reverse",
+                                }}
+                            />
+                            <div className="relative w-3/4 h-3/4 rounded-xl bg-card p-6 shadow-lg backdrop-blur-sm">
                                 <div className="space-y-4">
-                                    <div className="w-full h-40 rounded-lg bg-muted animate-pulse"></div>
+                                    <motion.div
+                                        className="w-full h-40 rounded-lg bg-gradient-to-r from-primary/20 to-primary/30"
+                                        animate={{
+                                            opacity: [0.5, 0.8, 0.5],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                        }}
+                                    />
                                     <div className="space-y-2">
-                                        <div className="w-3/4 h-6 rounded bg-muted/70 animate-pulse"></div>
-                                        <div className="w-1/2 h-6 rounded bg-muted/70 animate-pulse"></div>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-4">
-                                        <div className="w-20 h-8 rounded bg-primary/30 animate-pulse"></div>
-                                        <div className="w-12 h-12 rounded-full bg-secondary/30 animate-pulse"></div>
+                                        <motion.div
+                                            className="w-3/4 h-6 rounded bg-primary/20"
+                                            animate={{
+                                                opacity: [0.5, 0.8, 0.5],
+                                            }}
+                                            transition={{
+                                                duration: 2,
+                                                delay: 0.2,
+                                                repeat: Infinity,
+                                            }}
+                                        />
+                                        <motion.div
+                                            className="w-1/2 h-6 rounded bg-primary/20"
+                                            animate={{
+                                                opacity: [0.5, 0.8, 0.5],
+                                            }}
+                                            transition={{
+                                                duration: 2,
+                                                delay: 0.4,
+                                                repeat: Infinity,
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -151,7 +220,31 @@ function App() {
             </section>
 
             {/* Features Section */}
-            <section className="py-20 bg-muted/30">
+            <section className="py-20 bg-muted/30 relative overflow-hidden">
+                {/* Decorative elements */}
+                <motion.div
+                    className="absolute -left-20 top-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl"
+                    animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.3, 0.5, 0.3],
+                    }}
+                    transition={{
+                        duration: 5,
+                        repeat: Infinity,
+                    }}
+                />
+                <motion.div
+                    className="absolute -right-20 bottom-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl"
+                    animate={{
+                        scale: [1.2, 1, 1.2],
+                        opacity: [0.3, 0.5, 0.3],
+                    }}
+                    transition={{
+                        duration: 5,
+                        repeat: Infinity,
+                    }}
+                />
+
                 <div className="container mx-auto px-4">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -176,21 +269,21 @@ function App() {
                                 title: "Input Claims",
                                 description:
                                     "Companies input their waste management claims and coordinates into our platform.",
-                                icon: "📝",
+                                icon: "📁",
                                 delay: 0,
                             },
                             {
                                 title: "AI Analysis",
                                 description:
                                     "Our AI cross-references claims with satellite imagery and public carbon credit registries.",
-                                icon: "🤖",
+                                icon: "🚀",
                                 delay: 0.2,
                             },
                             {
                                 title: "Verification Report",
                                 description:
                                     "Receive a detailed report showing the legitimacy rating of carbon credit claims.",
-                                icon: "✅",
+                                icon: "📝",
                                 delay: 0.4,
                             },
                         ].map((feature, index) => (
@@ -198,13 +291,18 @@ function App() {
                                 key={index}
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
+                                whileHover={{ y: -5 }}
                                 transition={{ duration: 0.7 }}
                                 viewport={{ once: true }}
-                                className="bg-card rounded-xl p-6 shadow-sm border border-border"
+                                className="bg-card rounded-xl p-6 shadow-sm border border-border group hover:shadow-lg hover:border-primary/20 transition-all"
                             >
-                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl mb-4">
+                                <motion.div
+                                    className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl mb-4 group-hover:bg-primary/20 transition-colors"
+                                    whileHover={{ rotate: 360 }}
+                                    transition={{ duration: 0.7 }}
+                                >
                                     {feature.icon}
-                                </div>
+                                </motion.div>
                                 <h3 className="text-xl font-semibold mb-2">
                                     {feature.title}
                                 </h3>
@@ -302,14 +400,14 @@ function App() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button
                                 size="lg"
-                                className="px-8"
+                                className="px-8 bg-primary hover:bg-primary/90 text-primary-foreground"
                             >
                                 Get Started Now
                             </Button>
                             <Button
                                 size="lg"
                                 variant="outline"
-                                className="px-8"
+                                className="px-8 border-primary text-primary hover:bg-primary/10"
                             >
                                 Request Demo
                             </Button>
