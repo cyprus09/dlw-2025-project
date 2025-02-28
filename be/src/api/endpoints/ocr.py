@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 
-from ...schemas.ocr import OCRResponse, OCRAnalysisRequest, OCRAnalysisResponse, UploadAnalyzeResponse
+from ...schemas.ocr import OCRResponse, UploadAnalyzeResponse
 from ...services.ocr_service import process_document
 from ...services.openai_service import analyze_text_with_query
 

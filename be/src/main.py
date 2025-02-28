@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from .api.endpoints import ml , ocr
+from src.api.endpoints import ml , ocr
 
 app = FastAPI(
     title="DLW 2025 API", description="API for DLW 2025 ML Model", version="1.0.0"
