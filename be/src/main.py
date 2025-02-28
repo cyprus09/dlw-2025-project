@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from api.endpoints import ml , ocr, chat
+from .api.endpoints import ml , ocr
 
 app = FastAPI(
     title="DLW 2025 API", description="API for DLW 2025 ML Model", version="1.0.0"
@@ -19,7 +19,6 @@ app.add_middleware(
 )
 
 app.include_router(ml.router, prefix="/api/ml", tags=["ml"])
-app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["ocr"])
 
 @app.get("/")
