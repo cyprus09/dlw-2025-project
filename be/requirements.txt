@@ -1,0 +1,21 @@
+# Core FastAPI dependencies
+fastapi[standard]==0.115.8
+pydantic==2.10.6
+starlette==0.45.3
+uvicorn==0.34.0
+
+# Additional runtime dependencies
+python-dotenv==1.0.1
+python-multipart==0.0.20
+email_validator==2.2.0
+pydantic-core==2.27.2
+typing-extensions==4.12.2
+
+# Server dependencies
+uvloop==0.21.0
+httptools==0.6.4
+watchfiles==1.0.4
+websockets==15.0
+
+# HTTP client
+httpx==0.28.1
