@@ -17,11 +17,11 @@ httptools==0.6.4
 watchfiles==1.0.4
 websockets==15.0
 requests==2.32.3
-urllib3-2.3.0
+# urllib3-2.3.0
 
 # HTTP client
 httpx==0.28.1
-requests == 2.26.0
+# requests == 2.26.0
 
 # OpenAI and OCR dependencies
 openai==1.65.1
@@ -31,3 +31,9 @@ pdfplumber==0.10.3
 pymupdf==1.24.10
 pymupdf4llm==0.0.17
 numpy==1.21.0
+pandas==2.2.3
+scipy--1.13.1
+scikit-learn==1.6.1
+matplotlib==3.9.4
+tensorflow==2.18.0
+earthengine-api==1.5.4
