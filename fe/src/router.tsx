@@ -1,7 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "./App";
-import Ocr from "./pages/Ocr";
-import StructuredOutput from "./pages/StructuredOutput";
+import CarbonInsights from "./pages/CarbonInsights";
+import Loading from "./pages/Loading";
+import Process from "./pages/Process";
 
 export const router = createBrowserRouter([
     {
@@ -9,11 +10,15 @@ export const router = createBrowserRouter([
         element: <App />,
     },
     {
-        path: "/ocr",
-        element: <Ocr />,
+        path: "/process",
+        element: <Process />,
     },
     {
-        path: "/structured-output",
-        element: <StructuredOutput />,
+        path: "/loading-output",
+        element: <Loading />,
+    },
+    {
+        path: "/insights",
+        element: <CarbonInsights />,
     },
 ]);

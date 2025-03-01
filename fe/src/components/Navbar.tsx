@@ -26,7 +26,7 @@ export function Navbar() {
     });
 
     return (
-        <nav className="sticky top-0 z-50 backdrop-blur-lg bg-[#1E3A2F]/80 border-b border-[#7aa56a]/20">
+        <nav className="sticky top-0 z-50 backdrop-blur-lg bg-[#1E3A2F] border-b border-[#7aa56a]/20">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -36,10 +36,12 @@ export function Navbar() {
                 >
                     <div className="w-10 h-10 rounded-full bg-[#7aa56a] flex items-center justify-center">
                         <span className="text-[#1E3A2F] font-bold text-xl">
-                            T
+                            TBD
                         </span>
                     </div>
-                    <span className="font-bold text-xl text-white">TBD.</span>
+                    <span className="font-bold text-xl text-white">
+                        TrueCarbon
+                    </span>
                 </motion.div>
 
                 <motion.div
@@ -103,6 +105,7 @@ export function Navbar() {
                         variant="default"
                         size="default"
                         className="bg-[#7aa56a] hover:bg-[#7aa56a]/90 text-[#1E3A2F]"
+                        onClick={() => (window.location.href = "/process")}
                     >
                         Get Started
                     </Button>

@@ -34,7 +34,7 @@ function App() {
                             Sustainable Future Starts Here
                         </motion.div>
                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                            Verify Carbon Credits with{" "}
+                            Verify Carbon Offsets with{" "}
                             <motion.span
                                 className="text-[#7aa56a] inline-block"
                                 initial={{ opacity: 0, y: 20 }}
@@ -46,7 +46,7 @@ function App() {
                         </h1>
                         <p className="text-lg text-gray-300">
                             Our AI-powered platform detects discrepancies
-                            between claimed and actual waste management,
+                            between claimed and actual carbon offset efforts,
                             ensuring companies only earn carbon credits for
                             genuine environmental impact.
                         </p>
@@ -58,6 +58,9 @@ function App() {
                                 <Button
                                     size="lg"
                                     className="px-8 bg-[#7aa56a] hover:bg-[#7aa56a]/90 text-[#1E3A2F]"
+                                    onClick={() =>
+                                        (window.location.href = "/process")
+                                    }
                                 >
                                     <span className="mr-2">🌟</span>
                                     Verify Claims
@@ -70,7 +73,10 @@ function App() {
                                 <Button
                                     size="lg"
                                     variant="outline"
-                                    className="px-8 border-[#7aa56a] text-[#7aa56a] hover:bg-[#7aa56a]/10 bg-transparent hover:text-[#7aa56a]"
+                                    className="px-8 border-white text-white hover:bg-white/10 bg-transparent hover:text-white"
+                                    onClick={() =>
+                                        (window.location.href = "/process")
+                                    }
                                 >
                                     <span className="mr-2">📚</span>
                                     Learn More
@@ -201,7 +207,7 @@ function App() {
                             {
                                 title: "Input Claims",
                                 description:
-                                    "Companies input their waste management claims and coordinates into our platform.",
+                                    "Companies input their carbon offsets project report and coordinates into our platform.",
                                 icon: "📁",
                                 delay: 0,
                             },
@@ -215,7 +221,7 @@ function App() {
                             {
                                 title: "Verification Report",
                                 description:
-                                    "Get detailed reports on the accuracy of waste management claims.",
+                                    "Get detailed reports on the accuracy of carbon offsets project report.",
                                 icon: "📊",
                                 delay: 0.4,
                             },
@@ -279,12 +285,12 @@ function App() {
                         {
                             title: "3. Satellite Imagery Analysis",
                             description:
-                                "Using the provided coordinates, we analyze satellite imagery to verify the actual waste management activities.",
+                                "Using the provided coordinates, we analyze satellite imagery to verify the actual carbon offset efforts.",
                         },
                         {
                             title: "4. Compare & Rate",
                             description:
-                                "We compare the claimed carbon credits with our calculated values to determine a fraud rating on a normalized scale.",
+                                "We compare the claimed carbon offset efforts with our calculated values to determine a fraud rating on a normalized scale.",
                         },
                     ].map((step, index) => (
                         <motion.div
@@ -325,7 +331,7 @@ function App() {
                         </h2>
                         <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
                             Join the movement towards transparency and
-                            accountability in waste management and carbon credit
+                            accountability in waste management and carbon offset
                             claims.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -355,16 +361,16 @@ function App() {
                             <div className="flex items-center space-x-2 mb-4">
                                 <div className="w-8 h-8 rounded-full bg-[#7aa56a] flex items-center justify-center">
                                     <span className="text-[#1E3A2F] font-bold text-sm">
-                                        T
+                                        TBD
                                     </span>
                                 </div>
                                 <span className="font-bold text-[#7aa56a]">
-                                    TBD.
+                                    TrueCarbon.
                                 </span>
                             </div>
                             <p className="text-gray-300 text-sm">
                                 Promoting accountability and transparency in
-                                waste management and carbon credit claims.
+                                waste management and carbon offset claims.
                             </p>
                         </div>
 
