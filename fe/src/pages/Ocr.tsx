@@ -1,7 +1,14 @@
-import { useState, useEffect } from "react";
+import {
+    Calculator,
+    Lightbulb,
+    MapPin,
+    Notebook,
+    StarIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Navbar } from "../components/Navbar";
 import { Button } from "../components/ui/button";
 import { API_ENDPOINTS } from "../config/api";
-import { Navbar } from "../components/Navbar";
 
 interface StructuredAnalysisResponse {
     filename: string;
@@ -40,12 +47,8 @@ interface StructuredAnalysisResponse {
 
 export default function Ocr() {
     const [file, setFile] = useState<File | null>(null);
-    const [extractedText, setExtractedText] = useState<string>("");
     const [structuredData, setStructuredData] = useState<
         StructuredAnalysisResponse["structured_response"] | null
-    >(null);
-    const [usageStats, setUsageStats] = useState<
-        StructuredAnalysisResponse["usage"] | null
     >(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -132,9 +135,7 @@ export default function Ocr() {
             const data: StructuredAnalysisResponse = await response.json();
 
             setProcessingStage("Extracting text and analyzing content...");
-            setExtractedText(data.ocr_text);
             setStructuredData(data.structured_response);
-            setUsageStats(data.usage);
             setUploadSuccess(true);
             setProcessingStage("Analysis complete");
         } catch (error) {
@@ -152,9 +153,7 @@ export default function Ocr() {
 
     const handleRemoveFile = () => {
         setFile(null);
-        setExtractedText("");
         setStructuredData(null);
-        setUsageStats(null);
         setUploadSuccess(false);
         setUploadError(null);
         setProcessingStage("");
@@ -164,14 +163,13 @@ export default function Ocr() {
     useEffect(() => {
         if (file) {
             setUploadSuccess(false);
-            setExtractedText("");
         }
     }, [file]);
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col h-screen">
             <Navbar />
-            <div className="flex-grow p-5">
+            <div className="h-[calc(100vh-50px)] p-5 overflow-hidden">
                 <div className="h-full w-full">
                     {!file ? (
                         <div className="flex flex-col items-center justify-center h-full">
@@ -349,23 +347,7 @@ export default function Ocr() {
                             </div>
 
                             {/* Right Column - Processing Status */}
-                            <div className="rounded-lg border bg-white p-6 shadow-sm flex flex-col h-full overflow-y-scroll">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <h2 className="text-xl font-semibold text-gray-800">
-                                        {uploadSuccess
-                                            ? "Project Analysis"
-                                            : "Processing Status"}
-                                    </h2>
-                                    {uploadSuccess && (
-                                        <div className="flex items-center">
-                                            <span className="mr-2 inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                                            <span className="text-sm font-medium text-green-600">
-                                                Completed
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
+                            <div className="rounded-lg bg-white flex flex-col h-full overflow-y-scroll scrollbar-hide">
                                 {isUploading ? (
                                     <div className="flex flex-1 flex-col items-center justify-center">
                                         <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-emerald-500"></div>
@@ -427,21 +409,18 @@ export default function Ocr() {
                                 ) : uploadSuccess ? (
                                     <div className="flex flex-1 flex-col">
                                         {structuredData && (
-                                            <div className="mb-4 rounded-lg bg-whitep-4">
-                                                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                                                    Project Details
-                                                </h3>
-                                                <div className="overflow-auto">
+                                            <div className="mb-4 rounded-lg bg-white">
+                                                <div>
                                                     <div className="space-y-6">
                                                         {/* Project Header */}
-                                                        <div className="bg-gradient-to-r from-green-600 to-green-800 rounded-lg p-5 text-white shadow-md">
+                                                        <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
                                                             <h2 className="text-2xl font-bold mb-2">
                                                                 {
                                                                     structuredData.project_title
                                                                 }
                                                             </h2>
-                                                            <div className="flex items-center text-green-100">
-                                                                <span className="text-sm">
+                                                            <div className="flex items-center">
+                                                                <span className="text-sm text-gray-600">
                                                                     Document
                                                                     Version:{" "}
                                                                     {
@@ -454,17 +433,7 @@ export default function Ocr() {
                                                         {/* Summary Section */}
                                                         <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
                                                             <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center">
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    className="h-5 w-5 mr-2 text-green-600"
-                                                                    viewBox="0 0 20 20"
-                                                                    fill="currentColor"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                                                    />
-                                                                </svg>
+                                                                <Notebook className="h-5 w-5 mr-2 text-green-600" />
                                                                 Summary
                                                             </h3>
                                                             <p className="text-gray-600">
@@ -479,17 +448,7 @@ export default function Ocr() {
                                                             {/* Location Section */}
                                                             <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
                                                                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                                                                    <svg
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        className="h-5 w-5 mr-2 text-green-600"
-                                                                        viewBox="0 0 20 20"
-                                                                        fill="currentColor"
-                                                                    >
-                                                                        <path
-                                                                            fillRule="evenodd"
-                                                                            d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                                                                        />
-                                                                    </svg>
+                                                                    <MapPin className="h-5 w-5 mr-2 text-green-600" />
                                                                     Location
                                                                 </h3>
                                                                 <div className="space-y-2">
@@ -555,17 +514,7 @@ export default function Ocr() {
                                                             {/* Emissions Reduction Section */}
                                                             <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
                                                                 <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                                                                    <svg
-                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                        className="h-5 w-5 mr-2 text-green-600"
-                                                                        viewBox="0 0 20 20"
-                                                                        fill="currentColor"
-                                                                    >
-                                                                        <path
-                                                                            fillRule="evenodd"
-                                                                            d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zm7-10a1 1 0 01.707.293l.707.707L15.414 5a1 1 0 11-1.414 1.414L13 5.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707 1.414-1.414A1 1 0 0112 2zm-1 10a1 1 0 01.707.293l.707.707 1.414-1.414a1 1 0 111.414 1.414l-1.414 1.414-.707.707a1 1 0 01-1.414-1.414l.707-.707 1.414-1.414A1 1 0 0111 12z"
-                                                                        />
-                                                                    </svg>
+                                                                    <Calculator className="h-5 w-5 mr-2 text-green-600" />
                                                                     Claimed
                                                                     Reductions
                                                                 </h3>
@@ -608,18 +557,7 @@ export default function Ocr() {
                                                         {/* Key Activities Section */}
                                                         <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
                                                             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    className="h-5 w-5 mr-2 text-green-600"
-                                                                    viewBox="0 0 20 20"
-                                                                    fill="currentColor"
-                                                                >
-                                                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                                                                    />
-                                                                </svg>
+                                                                <StarIcon className="h-5 w-5 mr-2 text-green-600" />
                                                                 Key Activities
                                                             </h3>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -653,17 +591,7 @@ export default function Ocr() {
                                                         {/* Thinking Space Section */}
                                                         <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
                                                             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    className="h-5 w-5 mr-2 text-green-600"
-                                                                    viewBox="0 0 20 20"
-                                                                    fill="currentColor"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                                                    />
-                                                                </svg>
+                                                                <Lightbulb className="h-5 w-5 mr-2 text-green-600" />
                                                                 Analysis &
                                                                 Observations
                                                             </h3>
@@ -760,40 +688,6 @@ export default function Ocr() {
                                                 </div>
                                             </div>
                                         )}
-
-                                        <div className="mt-4 flex justify-end">
-                                            <Button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(
-                                                        extractedText
-                                                    );
-                                                }}
-                                                variant="outline"
-                                                className="flex items-center"
-                                            >
-                                                <svg
-                                                    className="mr-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                >
-                                                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                                                    <rect
-                                                        x="8"
-                                                        y="2"
-                                                        width="8"
-                                                        height="4"
-                                                        rx="1"
-                                                        ry="1"
-                                                    ></rect>
-                                                </svg>
-                                                Copy Text
-                                            </Button>
-                                        </div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-1 flex-col items-center justify-center text-center">
