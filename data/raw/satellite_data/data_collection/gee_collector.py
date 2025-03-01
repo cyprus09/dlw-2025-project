@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 # Constants
-PROJECT_ID = "dlw-hackathon-452319"
+PROJECT_ID = "PROJECT_ID"
 DEFAULT_BUFFER = 500  # meters
 MAX_PIXELS = 1e9
 BATCH_SIZE = 10  # Process coordinates in batches to avoid overloading
