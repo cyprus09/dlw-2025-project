@@ -11,17 +11,12 @@ from tensorflow.keras.layers import (
 )
 import ssl
 
-# Disable SSL verification temporarily
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
-# Define custom IoU metric with threshold
 def custom_iou(y_true, y_pred, threshold=0.5):
-    """Custom IoU metric with adjustable threshold"""
-    # Apply threshold to predictions
     y_pred = tf.cast(y_pred > threshold, tf.float32)
 
-    # Calculate intersection and union
     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
     union = (
         tf.reduce_sum(y_true, axis=[1, 2, 3])
@@ -29,14 +24,12 @@ def custom_iou(y_true, y_pred, threshold=0.5):
         - intersection
     )
 
-    # Add small epsilon to avoid division by zero
     iou = tf.reduce_mean((intersection + 1e-7) / (union + 1e-7))
     return iou
 
 
 # Define Dice loss
 def dice_loss(y_true, y_pred):
-    """Dice loss function for segmentation"""
     smooth = 1.0
     y_true_f = tf.reshape(y_true, [-1])
     y_pred_f = tf.reshape(y_pred, [-1])
@@ -48,7 +41,6 @@ def dice_loss(y_true, y_pred):
 
 # Combined loss function
 def combined_loss(y_true, y_pred):
-    """Combination of binary crossentropy and dice loss"""
     bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
     dice = dice_loss(y_true, y_pred)
     return bce + dice
@@ -64,24 +56,9 @@ def make_iou_threshold(threshold):
 
 
 def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
-    """
-    U-Net architecture for forest cover segmentation with pre-trained encoder.
-    Modified to work with RGB+NDVI inputs only (no landcover).
-    Fixed to ensure output shape matches input shape.
-    Added custom IoU metric and combined loss function.
-
-    Args:
-        input_shape: Shape of input images (RGB + NDVI)
-        use_pretrained: Whether to use pre-trained MobileNetV2 as encoder
-
-    Returns:
-        Compiled Keras model
-    """
     inputs = Input(input_shape)
     print(f"Input shape: {input_shape}")
 
-    # Handle input with 4 channels (RGB + NDVI)
-    # MobileNetV2 expects 3 channels, so we'll extract the first 3 channels (RGB)
     rgb_input = tf.keras.layers.Lambda(lambda x: x[:, :, :, :3])(inputs)
 
     # Convert non-RGB channels (NDVI) to features with 1x1 convolutions
@@ -94,14 +71,12 @@ def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
 
     # Pre-trained encoder (MobileNetV2)
     if use_pretrained:
-        # Create MobileNetV2 base model
         base_model = MobileNetV2(
             input_shape=(input_shape[0], input_shape[1], 3),
             include_top=False,
             weights="imagenet",
         )
 
-        # Print layers information safely
         for layer in base_model.layers:
             try:
                 output_shape = layer.output_shape
@@ -120,7 +95,6 @@ def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
         print(f"Bridge shape: {bridge.shape}")
 
         # Upsampling path
-        # Upsampling block 1
         x = Conv2DTranspose(256, 3, strides=2, padding="same", activation="relu")(
             bridge
         )
@@ -149,21 +123,17 @@ def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
 
         # Add NDVI features if available
         if other_features is not None:
-            # Resize NDVI features to match current size
             current_size = x.shape[1]
             other_resized = Resizing(current_size, current_size)(other_features)
             x = concatenate([x, other_resized])
             print(f"After concatenation with NDVI features: {x.shape}")
 
-        # Additional convolutions to process the features
         x = Conv2D(64, 3, activation="relu", padding="same")(x)
         x = BatchNormalization()(x)
         x = Conv2D(32, 3, activation="relu", padding="same")(x)
         x = BatchNormalization()(x)
 
     else:
-        # Standard U-Net architecture
-        # Encoder
         x = Conv2D(64, 3, activation="relu", padding="same")(inputs)
         x = BatchNormalization()(x)
         x = Conv2D(64, 3, activation="relu", padding="same")(x)
@@ -232,7 +202,6 @@ def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
 
     model = Model(inputs=inputs, outputs=outputs)
 
-    # Compile with combined loss and custom IoU metrics at different thresholds
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
         loss=combined_loss,

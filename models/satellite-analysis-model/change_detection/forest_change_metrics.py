@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 """
-change_metrics.py
-
 This script extracts forest change metrics from two satellite images using both 
 the forest detection model and change detection model.
 
@@ -28,7 +25,6 @@ from tensorflow.keras.models import load_model
 
 # Custom loss functions
 def dice_loss(y_true, y_pred):
-    """Dice loss function for segmentation"""
     smooth = 1.0
     y_true_f = tf.reshape(y_true, [-1])
     y_pred_f = tf.reshape(y_pred, [-1])
@@ -39,15 +35,12 @@ def dice_loss(y_true, y_pred):
 
 
 def combined_loss(y_true, y_pred):
-    """Combination of binary crossentropy and dice loss"""
     bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
     dice = dice_loss(y_true, y_pred)
     return bce + dice
 
 
-# Custom metrics for model loading
 def custom_iou(y_true, y_pred, threshold=0.5):
-    """Custom IoU metric with adjustable threshold"""
     # Apply threshold to predictions
     y_pred = tf.cast(y_pred > threshold, tf.float32)
 
@@ -193,18 +186,6 @@ def analyze_forest_coverage(model, image):
 
 
 def analyze_forest_change(forest_model, change_model, image_t1, image_t2):
-    """
-    Analyze forest cover change between two time periods
-
-    Args:
-        forest_model: Trained forest detection model
-        change_model: Trained change detection model
-        image_t1: Preprocessed satellite image from time period 1 (earlier)
-        image_t2: Preprocessed satellite image from time period 2 (later)
-
-    Returns:
-        Dictionary with forest change metrics and predictions
-    """
     print("Analyzing forest change...")
 
     # Get forest coverage for each time period using forest detection model
@@ -216,7 +197,6 @@ def analyze_forest_change(forest_model, change_model, image_t1, image_t2):
     )
 
     # Process with change detection model
-    # Try different concatenation approaches based on your model
     change_prediction = None
     try:
         # Try concatenating along batch dimension
@@ -288,8 +268,6 @@ def analyze_forest_change(forest_model, change_model, image_t1, image_t2):
             ),
         }
 
-        # Calculate forest edge metrics
-        # Create edge masks using morphological operations
         if np.any(binary_mask_t1):
             eroded_t1 = ndimage.binary_erosion(binary_mask_t1)
             edge_mask_t1 = binary_mask_t1 & ~eroded_t1
@@ -335,10 +313,7 @@ def analyze_forest_change(forest_model, change_model, image_t1, image_t2):
     if edge_metrics:
         metrics["edge_metrics"] = edge_metrics
 
-    # Add change model metrics if available
     if change_prediction is not None:
-        # This format will depend on your change detection model's output format
-        # Adjust according to your model's actual output
         try:
             change_metrics = {
                 "model_detected_changes": float(
@@ -422,7 +397,7 @@ def save_change_visualization(image_t1, image_t2, predictions, output_path):
     plt.subplot(2, 3, 6)
     change_map = np.zeros_like(binary_mask_t1, dtype=np.uint8)
     change_map[np.logical_and(~binary_mask_t1, ~binary_mask_t2)] = (
-        0  # No change (non-forest)
+        0 
     )
     change_map[np.logical_and(binary_mask_t1, binary_mask_t2)] = 1  # No change (forest)
     change_map[np.logical_and(binary_mask_t1, ~binary_mask_t2)] = 2  # Deforestation
@@ -444,17 +419,6 @@ def save_change_visualization(image_t1, image_t2, predictions, output_path):
 
 
 def analyze_forest_change(forest_model, image_t1, image_t2):
-    """
-    Analyze forest cover change between two time periods using only the forest detection model
-
-    Args:
-        forest_model: Trained forest detection model
-        image_t1: Preprocessed satellite image from time period 1 (earlier)
-        image_t2: Preprocessed satellite image from time period 2 (later)
-
-    Returns:
-        Dictionary with forest change metrics and predictions
-    """
     print("Analyzing forest change using forest detection model only...")
 
     # Get forest coverage for each time period using forest detection model
@@ -515,7 +479,6 @@ def analyze_forest_change(forest_model, image_t1, image_t2):
             ),
         }
 
-        # Calculate forest edge metrics
         # Create edge masks using morphological operations
         if np.any(binary_mask_t1):
             eroded_t1 = ndimage.binary_erosion(binary_mask_t1)
@@ -560,7 +523,7 @@ def analyze_forest_change(forest_model, image_t1, image_t2):
     change_magnitude = np.mean(difference_image) * 100
     significant_change = (
         np.mean(difference_image > 0.2) * 100
-    )  # 20% threshold for significant change
+    )
 
     change_metrics = {
         "mean_change_magnitude": float(f"{change_magnitude:.2f}"),

@@ -6,16 +6,13 @@ from datetime import datetime
 from model import build_forest_detection_model, custom_iou, make_iou_threshold
 import ssl
 
-# Disable SSL verification temporarily
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# Set random seeds for reproducibility
 np.random.seed(42)
 tf.random.set_seed(42)
 
 
 def load_dataset(data_dir):
-    """Load features and masks from .npy files"""
     try:
         features_path = os.path.join(data_dir, "X_features.npy")
         masks_path = os.path.join(data_dir, "y_masks.npy")
@@ -41,18 +38,14 @@ def load_dataset(data_dir):
 
 
 def create_data_augmentation_model():
-    """Create a sequential model for data augmentation."""
     data_augmentation = tf.keras.Sequential(
         [
-            # Apply random rotation
             tf.keras.layers.RandomRotation(0.2, fill_mode="reflect"),
-            # Apply random flip
             tf.keras.layers.RandomFlip("horizontal_and_vertical", seed=42),
             # Apply random zoom
             tf.keras.layers.RandomZoom(
                 height_factor=(-0.2, 0.2), width_factor=(-0.2, 0.2), fill_mode="reflect"
             ),
-            # Apply random contrast
             tf.keras.layers.RandomContrast(0.2),
             # Optional: apply a slight brightness variation
             tf.keras.layers.RandomBrightness(0.1),
@@ -72,15 +65,11 @@ def augment_dataset(features, masks, augmentation_factor=3):
     for i in range(augmentation_factor):
         print(f"Creating augmentation set {i+1}/{augmentation_factor}...")
 
-        # Apply same augmentation to both features and masks
-        # Use a different random seed for each augmentation set
         tf.random.set_seed(42 + i)
 
         # Apply augmentation
         aug_features = data_augmentation(features, training=True)
 
-        # For masks, we need to handle separately to ensure binary values
-        # Apply only geometric transformations to masks
         geometric_augmentation = tf.keras.Sequential(
             [
                 tf.keras.layers.RandomRotation(0.2, fill_mode="reflect"),
@@ -102,7 +91,6 @@ def augment_dataset(features, masks, augmentation_factor=3):
         augmented_features.append(aug_features)
         augmented_masks.append(aug_masks)
 
-    # Concatenate all augmented datasets
     augmented_features = np.concatenate(augmented_features, axis=0)
     augmented_masks = np.concatenate(augmented_masks, axis=0)
 
@@ -117,8 +105,6 @@ def plot_augmentation_examples(
     num_examples=3,
     save_path=None,
 ):
-    """Plot examples of original and augmented images."""
-    # Select random indices
     indices = np.random.choice(len(original_features), num_examples, replace=False)
 
     fig, axes = plt.subplots(num_examples, 6, figsize=(20, 4 * num_examples))
@@ -170,8 +156,6 @@ def plot_augmentation_examples(
 
 
 def plot_training_history(history, save_path=None):
-    """Plot and optionally save training metrics"""
-    # Find the IoU metrics in history
     iou_metrics = [
         key for key in history.history.keys() if "iou" in key and "val" not in key
     ]
@@ -205,7 +189,6 @@ def plot_training_history(history, save_path=None):
     axes[1].set_ylabel("Accuracy")
     axes[1].legend()
 
-    # Plot IoU if available
     if iou_metrics:
         plot_idx = 2
         for metric in iou_metrics:
@@ -221,7 +204,6 @@ def plot_training_history(history, save_path=None):
         axes[plot_idx].legend()
         plot_idx += 1
 
-    # Plot precision and recall
     if "precision" in history.history:
         plot_idx = 3 if iou_metrics else 2
         axes[plot_idx].plot(history.history["precision"], label="Training Precision")
@@ -249,7 +231,6 @@ def plot_training_history(history, save_path=None):
 
 
 def visualize_predictions(model, features, masks, num_samples=5, save_path=None):
-    """Visualize model predictions vs ground truth with different thresholds"""
     # Get random indices
     indices = np.random.choice(
         len(features), min(num_samples, len(features)), replace=False
@@ -303,7 +284,6 @@ def visualize_predictions(model, features, masks, num_samples=5, save_path=None)
 
 
 def main():
-    # Configuration
     DATA_DIR = "../../../data/processed/processed_ndvi_rgb/image_datasets"
     TRAIN_DIR = os.path.join(DATA_DIR, "train")
     VAL_DIR = os.path.join(DATA_DIR, "val")
@@ -324,8 +304,8 @@ def main():
     EPOCHS = 20
     BATCH_SIZE = 16
     LEARNING_RATE = 1e-4
-    INPUT_SHAPE = (64, 64, 4)  # RGB + NDVI (removed Land Cover)
-    AUGMENTATION_FACTOR = 3  # Multiply dataset size by this factor
+    INPUT_SHAPE = (64, 64, 4) 
+    AUGMENTATION_FACTOR = 3
 
     # Load datasets
     print("Loading training dataset...")
@@ -369,13 +349,13 @@ def main():
     model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
         filepath=os.path.join(MODEL_DIR, f"forest_detection_model_{timestamp}.h5"),
         save_best_only=True,
-        monitor="val_iou_threshold_0.1",  # Use lower threshold IoU for monitoring
+        monitor="val_iou_threshold_0.1",
         mode="max",
         verbose=1,
     )
 
     early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor="val_iou_threshold_0.1",  # Use lower threshold IoU for early stopping
+        monitor="val_iou_threshold_0.1",
         patience=15,
         restore_best_weights=True,
         mode="max",

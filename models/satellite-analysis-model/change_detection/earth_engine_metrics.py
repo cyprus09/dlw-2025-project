@@ -1,17 +1,6 @@
-#!/usr/bin/env python3
 """
-gee_forest_change.py
-
 This script uses Google Earth Engine to fetch satellite imagery for specific coordinates
 and years, then analyzes forest changes using the trained forest detection model.
-
-Requirements:
-  - earthengine-api: pip install earthengine-api
-  - geemap: pip install geemap (optional for visualization)
-  - tensorflow: pip install tensorflow
-  - rasterio: pip install rasterio
-  - numpy: pip install numpy
-  - matplotlib: pip install matplotlib
 
 Usage:
   python gee_forest_change.py --forest_model path/to/model.h5 
@@ -32,10 +21,8 @@ from tensorflow.keras.models import load_model
 import ee
 import ssl
 
-# Disable SSL verification temporarily
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# Initialize Earth Engine
 try:
     ee.Initialize(project="dlw-hackathon-452319")
     print("Earth Engine initialized successfully")
@@ -47,7 +34,6 @@ except Exception as e:
 
 # Custom metrics for model loading
 def dice_loss(y_true, y_pred):
-    """Dice loss function for segmentation"""
     smooth = 1.0
     y_true_f = tf.reshape(y_true, [-1])
     y_pred_f = tf.reshape(y_pred, [-1])
@@ -58,14 +44,12 @@ def dice_loss(y_true, y_pred):
 
 
 def combined_loss(y_true, y_pred):
-    """Combination of binary crossentropy and dice loss"""
     bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
     dice = dice_loss(y_true, y_pred)
     return bce + dice
 
 
 def custom_iou(y_true, y_pred, threshold=0.5):
-    """Custom IoU metric with adjustable threshold"""
     # Apply threshold to predictions
     y_pred = tf.cast(y_pred > threshold, tf.float32)
 
@@ -137,20 +121,6 @@ def load_forest_detection_model(model_path):
 def get_sentinel_image(
     latitude, longitude, year, buffer_size=1000, max_cloud_percent=20, patch_size=64
 ):
-    """
-    Get Sentinel-2 image for specific coordinates and year
-
-    Args:
-        latitude: Latitude coordinate
-        longitude: Longitude coordinate
-        year: Year to fetch image for
-        buffer_size: Buffer size in meters around the point (default: 1000m)
-        max_cloud_percent: Maximum cloud percentage (default: 20%)
-        patch_size: Output image size (default: 64x64 pixels)
-
-    Returns:
-        Dictionary with RGB and NDVI data
-    """
     # Define point and region
     point = ee.Geometry.Point([longitude, latitude])
     region = point.buffer(buffer_size)
@@ -209,7 +179,6 @@ def get_sentinel_image(
     side_length = buffer_size * 2  # in meters
     export_region = point.buffer(side_length / 2).bounds()
 
-    # Get the image as a fixed-size array - using sampleRectangle instead of reduceRegion
     try:
         print("Fetching image data...")
         array_data = selected_bands.sampleRectangle(region=export_region)
@@ -233,7 +202,6 @@ def get_sentinel_image(
             blue_array = blue_array.reshape(height, width)
             nir_array = nir_array.reshape(height, width)
         else:
-            # Arrays are already in correct shape
             height, width = red_array.shape
     except Exception as e:
         print(f"Error with sampleRectangle: {e}")
@@ -375,7 +343,6 @@ def get_sentinel_image(
 
 
 def analyze_forest_coverage(model, image, thresholds=[0.1, 0.3, 0.5, 0.7, 0.9]):
-    """Analyze forest coverage in a satellite image"""
     # Get model prediction
     prediction = model.predict(image)
 
@@ -409,7 +376,6 @@ def analyze_forest_coverage(model, image, thresholds=[0.1, 0.3, 0.5, 0.7, 0.9]):
         "std_probability": float(f"{np.std(prediction[0, :, :, 0]):.4f}"),
     }
 
-    # Try to calculate connectivity metrics (for threshold 0.5)
     connectivity_metrics = {}
     edge_metrics = {}
 
@@ -467,7 +433,6 @@ def analyze_forest_coverage(model, image, thresholds=[0.1, 0.3, 0.5, 0.7, 0.9]):
 
 
 def analyze_forest_change(forest_model, image_t1, image_t2):
-    """Analyze forest change between two time periods"""
     # Get metrics for each time period
     metrics_t1, prediction_t1 = analyze_forest_coverage(
         forest_model, image_t1["features"]
@@ -547,7 +512,6 @@ def analyze_forest_change(forest_model, image_t1, image_t2):
 
 
 def save_change_visualization(predictions, output_path, metadata=None):
-    """Save visualization of forest change"""
     # Create figure
     plt.figure(figsize=(15, 10))
 
@@ -571,11 +535,11 @@ def save_change_visualization(predictions, output_path, metadata=None):
     # Calculate change mask
     change_map = np.zeros_like(binary_mask_t1, dtype=np.uint8)
     change_map[np.logical_and(~binary_mask_t1, ~binary_mask_t2)] = (
-        0  # No change (non-forest)
+        0 
     )
-    change_map[np.logical_and(binary_mask_t1, binary_mask_t2)] = 1  # No change (forest)
-    change_map[np.logical_and(binary_mask_t1, ~binary_mask_t2)] = 2  # Deforestation
-    change_map[np.logical_and(~binary_mask_t1, binary_mask_t2)] = 3  # Reforestation
+    change_map[np.logical_and(binary_mask_t1, binary_mask_t2)] = 1
+    change_map[np.logical_and(binary_mask_t1, ~binary_mask_t2)] = 2
+    change_map[np.logical_and(~binary_mask_t1, binary_mask_t2)] = 3
 
     # Time 1 (Earlier)
     plt.subplot(2, 4, 1)
@@ -635,7 +599,6 @@ def save_change_visualization(predictions, output_path, metadata=None):
 
 
 def main():
-    # Parse command-line arguments
     parser = argparse.ArgumentParser(
         description="Analyze forest change using Google Earth Engine and ML models"
     )
@@ -670,11 +633,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Set default year2 if not provided
     if args.year2 is None:
         args.year2 = args.year1 + 3
 
-    # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
 
     # Load forest detection model
@@ -729,7 +690,6 @@ def main():
 
     save_change_visualization(predictions, viz_file, change_details["metadata"])
 
-    # Print summary
     print("\n=== Forest Change Analysis ===")
     print(f"Location: {args.latitude}, {args.longitude}")
     print(f"Period: {args.year1} to {args.year2}")

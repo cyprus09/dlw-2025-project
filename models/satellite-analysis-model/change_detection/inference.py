@@ -4,37 +4,21 @@ import rasterio
 import tensorflow as tf
 from skimage.transform import resize
 import pandas as pd
+import json
 
 from sklearn.ensemble import IsolationForest
 
 
 class AnomalyDetector:
     def __init__(self, historical_data):
-        """
-        Initialize anomaly detection based on historical forest data
-
-        Args:
-            historical_data (pd.DataFrame): Historical forest cover data
-        """
-        # Prepare features for anomaly detection
         features = historical_data[["forest_percentage", "ndvi", "evi", "savi"]]
 
-        # Train Isolation Forest
         self.detector = IsolationForest(
             contamination=0.1, random_state=42  # Assume 10% of data might be anomalous
         )
         self.detector.fit(features)
 
     def detect_anomalies(self, current_data):
-        """
-        Detect anomalies in current forest data
-
-        Args:
-            current_data (dict): Current forest metrics
-
-        Returns:
-            dict: Anomaly detection results
-        """
         # Prepare current data for prediction
         features = [
             current_data["forest_percentage"],
@@ -52,17 +36,6 @@ class AnomalyDetector:
         }
 
     def comprehensive_inference(self, rgb_path, ndvi_path, historical_data=None):
-        """
-        Perform comprehensive forest analysis
-
-        Args:
-            rgb_path (str): Path to RGB image
-            ndvi_path (str): Path to NDVI image
-            historical_data (list, optional): Historical image data
-
-        Returns:
-            dict: Comprehensive forest analysis
-        """
         # Basic forest cover prediction
         forest_cover = self.predict_forest_cover(rgb_path, ndvi_path)
 
@@ -101,13 +74,6 @@ class AnomalyDetector:
 
 class ForestCoverInference:
     def __init__(self, model_path, metadata_path=None):
-        """
-        Initialize forest cover inference pipeline
-
-        Args:
-            model_path (str): Path to trained model (.h5 file)
-            metadata_path (str, optional): Path to metadata CSV
-        """
         # Load trained model
         self.model = tf.keras.models.load_model(
             model_path, custom_objects={"iou_threshold": self._iou_threshold}
@@ -117,17 +83,6 @@ class ForestCoverInference:
         self.metadata = pd.read_csv(metadata_path) if metadata_path else None
 
     def _iou_threshold(self, y_true, y_pred, threshold=0.1):
-        """
-        Intersection over Union (IoU) metric with a specific threshold
-
-        Args:
-            y_true (tf.Tensor): Ground truth mask
-            y_pred (tf.Tensor): Predicted mask
-            threshold (float): Threshold for binary classification
-
-        Returns:
-            tf.Tensor: IoU score
-        """
         y_pred_binary = tf.cast(y_pred > threshold, tf.float32)
         y_true = tf.cast(y_true, tf.float32)
 
@@ -138,17 +93,6 @@ class ForestCoverInference:
         return iou
 
     def preprocess_image(self, rgb_path, ndvi_path, patch_size=64):
-        """
-        Preprocess satellite image for forest cover prediction
-
-        Args:
-            rgb_path (str): Path to RGB GeoTIFF
-            ndvi_path (str): Path to NDVI GeoTIFF
-            patch_size (int): Size of image patch to extract
-
-        Returns:
-            np.ndarray: Preprocessed image features
-        """
         try:
             # Read RGB data
             with rasterio.open(rgb_path) as src:
@@ -164,8 +108,8 @@ class ForestCoverInference:
                     ndvi = resize(ndvi, (height, width), preserve_range=True)
 
             # Normalize data
-            rgb = rgb / 10000.0  # Typical scaling for reflectance values
-            ndvi = (ndvi + 1) / 2.0  # Scale NDVI from [-1,1] to [0,1]
+            rgb = rgb / 10000.0 
+            ndvi = (ndvi + 1) / 2.0  
 
             # Stack features: RGB (3) + NDVI (1)
             features = np.vstack([rgb, ndvi[np.newaxis, :, :]])
@@ -191,15 +135,6 @@ class ForestCoverInference:
             return None
 
     def analyze_temporal_changes(self, historical_images):
-        """
-        Compare forest cover across multiple time periods
-
-        Args:
-            historical_images (list): List of (year, rgb_path, ndvi_path)
-
-        Returns:
-            dict: Temporal forest change metrics
-        """
         temporal_results = []
 
         for year, rgb_path, ndvi_path in historical_images:
@@ -212,7 +147,6 @@ class ForestCoverInference:
                 }
             )
 
-        # Calculate change rates
         if len(temporal_results) > 1:
             change_rates = [
                 (
@@ -233,16 +167,6 @@ class ForestCoverInference:
         return {"temporal_results": temporal_results}
 
     def calculate_advanced_vegetation_indices(self, rgb_path, ndvi_path):
-        """
-        Calculate additional vegetation and spectral indices
-
-        Args:
-            rgb_path (str): Path to RGB image
-            ndvi_path (str): Path to NDVI image
-
-        Returns:
-            dict: Advanced vegetation metrics
-        """
         # Read images
         with rasterio.open(rgb_path) as src_rgb, rasterio.open(ndvi_path) as src_ndvi:
             rgb = src_rgb.read()
@@ -268,17 +192,6 @@ class ForestCoverInference:
         }
 
     def predict_forest_cover(self, rgb_path, ndvi_path, threshold=0.5):
-        """
-        Predict forest cover for a given satellite image
-
-        Args:
-            rgb_path (str): Path to RGB GeoTIFF
-            ndvi_path (str): Path to NDVI GeoTIFF
-            threshold (float): Threshold for forest cover classification
-
-        Returns:
-            dict: Prediction results including forest cover metrics
-        """
         # Preprocess image
         features = self.preprocess_image(rgb_path, ndvi_path)
 
@@ -304,20 +217,7 @@ class ForestCoverInference:
 
 
 def analyze_landscape_context(self, rgb_path, ndvi_path, buffer_size=1000):
-    """
-    Analyze surrounding landscape context
-
-    Args:
-        rgb_path (str): Path to RGB image
-        ndvi_path (str): Path to NDVI image
-        buffer_size (int): Buffer size in meters
-
-    Returns:
-        dict: Landscape context metrics
-    """
-    # Use rasterio to get image metadata
     with rasterio.open(rgb_path) as src:
-        # Get image resolution and transform
         resolution = src.res[0]  # Pixel size
         transform = src.transform
 
@@ -347,23 +247,12 @@ def analyze_landscape_context(self, rgb_path, ndvi_path, buffer_size=1000):
     }
 
     def _calculate_forest_connectivity(self, ndvi_mask, threshold=0.6):
-        """
-        Calculate forest patch connectivity
-
-        Args:
-            ndvi_mask (np.ndarray): NDVI values
-            threshold (float): NDVI threshold for forest
-
-        Returns:
-            float: Forest connectivity metric
-        """
         # Create binary forest mask
         forest_mask = ndvi_mask > threshold
 
         # Use scipy for connected component analysis
         from scipy import ndimage
 
-        # Label connected components
         labeled_forest, num_features = ndimage.label(forest_mask)
 
         # Calculate forest patch sizes
@@ -379,20 +268,9 @@ def analyze_landscape_context(self, rgb_path, ndvi_path, buffer_size=1000):
         }
 
     def batch_inference(self, data_dir, output_path=None):
-        """
-        Perform inference on multiple images in a directory
-
-        Args:
-            data_dir (str): Directory containing RGB and NDVI images
-            output_path (str, optional): Path to save inference results
-
-        Returns:
-            pd.DataFrame: Inference results for all images
-        """
         # Prepare results storage
         results = []
 
-        # If metadata is provided, use it to match files
         if self.metadata is not None:
             for _, row in self.metadata.iterrows():
                 rgb_path = os.path.join(data_dir, row["rgb_file"])
@@ -406,13 +284,11 @@ def analyze_landscape_context(self, rgb_path, ndvi_path, buffer_size=1000):
                 result_row.update(inference_result)
                 results.append(result_row)
 
-        # If no metadata, search for matching RGB and NDVI files
         else:
             # Find all unique base names of RGB and NDVI files
             rgb_files = [f for f in os.listdir(data_dir) if f.endswith("_rgb.tif")]
 
             for rgb_filename in rgb_files:
-                # Try to find matching NDVI file
                 base_name = rgb_filename.replace("_rgb.tif", "")
                 ndvi_filename = f"{base_name}_ndvi.tif"
 
@@ -454,7 +330,6 @@ def main():
     # Initialize inference
     inference = ForestCoverInference(model_path=model_path, metadata_path=metadata_path)
 
-    # Prepare comprehensive results
     comprehensive_results = []
 
     # Load metadata for historical context
@@ -469,7 +344,6 @@ def main():
         )
     ]
 
-    # Prepare historical data if available
     historical_images = []
     if historical_metadata is not None:
         for _, row in historical_metadata.iterrows():
@@ -523,18 +397,15 @@ def main():
         "high_risk_indicators": [],
     }
 
-    # Identify high-risk indicators
     for index, row in results_df.iterrows():
         risk_indicators = []
 
-        # Anomaly detection
         if (
             row["anomaly_detection"] is not None
             and row["anomaly_detection"]["is_anomaly"]
         ):
             risk_indicators.append("Anomalous Forest Metrics")
 
-        # Temporal change analysis
         if (
             row["temporal_analysis"] is not None
             and row["temporal_analysis"].get("total_forest_loss", 0) > 0.2
@@ -555,7 +426,6 @@ def main():
                 {"image": row["rgb_file"], "risks": risk_indicators}
             )
 
-    # Print summary
     print("\n--- Comprehensive Forest Analysis Summary ---")
     print(f"Total Images Processed: {fraud_risk_summary['total_images']}")
     print(

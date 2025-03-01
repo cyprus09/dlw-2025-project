@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 """
-forest_metrics.py
-
 This script extracts forest metrics from a satellite image using the forest detection model.
 It can process either a single image or extract one from a dataset.
 
@@ -9,15 +6,6 @@ Usage:
   python forest_metrics.py --model_path path/to/model.h5 --image_path path/to/image.npy --output_path results.json
   or
   python forest_metrics.py --model_path path/to/model.h5 --dataset_path path/to/X_features.npy --image_index 42 --output_path results.json
-
-Arguments:
-  --model_path    Path to the trained forest detection model (.h5)
-  --image_path    Path to a single image file (.npy) [optional if using dataset_path]
-  --dataset_path  Path to the dataset file (.npy) [optional if using image_path]
-  --image_index   Index of the image to extract from dataset [required if using dataset_path]
-  --output_path   Path to save the output JSON metrics
-  --visualize     Flag to save visualization of the prediction (default: False)
-  --viz_path      Path to save visualization (default: prediction.png)
 """
 
 import os
@@ -29,9 +17,7 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 
 
-# Define custom loss functions
 def dice_loss(y_true, y_pred):
-    """Dice loss function for segmentation"""
     smooth = 1.0
     y_true_f = tf.reshape(y_true, [-1])
     y_pred_f = tf.reshape(y_pred, [-1])
@@ -42,19 +28,14 @@ def dice_loss(y_true, y_pred):
 
 
 def combined_loss(y_true, y_pred):
-    """Combination of binary crossentropy and dice loss"""
     bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
     dice = dice_loss(y_true, y_pred)
     return bce + dice
 
 
-# Custom metrics for model loading
 def custom_iou(y_true, y_pred, threshold=0.5):
-    """Custom IoU metric with adjustable threshold"""
-    # Apply threshold to predictions
     y_pred = tf.cast(y_pred > threshold, tf.float32)
 
-    # Calculate intersection and union
     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
     union = (
         tf.reduce_sum(y_true, axis=[1, 2, 3])
@@ -62,13 +43,11 @@ def custom_iou(y_true, y_pred, threshold=0.5):
         - intersection
     )
 
-    # Add small epsilon to avoid division by zero
     iou = tf.reduce_mean((intersection + 1e-7) / (union + 1e-7))
     return iou
 
 
 def make_iou_threshold(threshold):
-    """Create an IoU metric with a specific threshold"""
 
     def iou_threshold(y_true, y_pred):
         return custom_iou(y_true, y_pred, threshold)
@@ -78,7 +57,6 @@ def make_iou_threshold(threshold):
 
 
 def load_forest_detection_model(model_path):
-    """Load the forest detection model with custom metrics and loss functions"""
     custom_objects = {
         "iou_threshold_0.1": make_iou_threshold(0.1),
         "iou_threshold_0.3": make_iou_threshold(0.3),
@@ -98,10 +76,8 @@ def load_forest_detection_model(model_path):
         print(f"Error loading model with custom objects: {e}")
         print("Attempting to load with compile=False...")
 
-        # Try loading without compilation
         model = load_model(model_path, compile=False)
 
-        # Recompile with standard loss and metrics
         model.compile(
             optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"]
         )
@@ -111,13 +87,11 @@ def load_forest_detection_model(model_path):
 
 
 def load_image(image_path):
-    """Load a single image from .npy file"""
     print(f"Loading image from {image_path}")
 
     try:
         image = np.load(image_path)
 
-        # If the image doesn't have a batch dimension, add one
         if len(image.shape) == 3:
             image = np.expand_dims(image, axis=0)
 
@@ -129,7 +103,6 @@ def load_image(image_path):
 
 
 def extract_from_dataset(dataset_path, image_index):
-    """Extract a single image from a dataset"""
     print(f"Loading dataset from {dataset_path}")
 
     try:
@@ -155,31 +128,17 @@ def extract_from_dataset(dataset_path, image_index):
 
 
 def analyze_forest_coverage(model, image, thresholds=[0.1, 0.3, 0.5, 0.7, 0.9]):
-    """
-    Analyze forest coverage in a satellite image
-
-    Args:
-        model: Trained forest detection model
-        image: Preprocessed satellite image (with batch dimension)
-        thresholds: List of thresholds to apply to predictions
-
-    Returns:
-        Dictionary with forest coverage metrics and prediction
-    """
     print("Analyzing forest coverage...")
 
     # Get model prediction
     prediction = model.predict(image)
 
-    # Calculate forest coverage percentage at different thresholds
     coverage_metrics = {}
     binary_masks = {}
 
     for threshold in thresholds:
-        # Apply threshold to get binary mask
         binary_mask = prediction[0, :, :, 0] > threshold
 
-        # Calculate percentage of forest coverage
         forest_percentage = np.mean(binary_mask) * 100
 
         coverage_metrics[f"forest_coverage_threshold_{threshold}"] = float(
@@ -187,12 +146,10 @@ def analyze_forest_coverage(model, image, thresholds=[0.1, 0.3, 0.5, 0.7, 0.9]):
         )
         binary_masks[f"binary_mask_{threshold}"] = binary_mask
 
-    # Calculate average forest coverage across all thresholds
     coverage_metrics["average_forest_coverage"] = float(
         f"{np.mean(list(coverage_metrics.values())):.2f}"
     )
 
-    # Calculate other useful statistics
     pixel_stats = {
         "min_probability": float(f"{np.min(prediction[0, :, :, 0]):.4f}"),
         "max_probability": float(f"{np.max(prediction[0, :, :, 0]):.4f}"),
@@ -262,9 +219,7 @@ def save_visualization(image, prediction, output_path):
     """Save visualization of model prediction"""
     plt.figure(figsize=(15, 5))
 
-    # Display RGB image
     plt.subplot(1, 3, 1)
-    # Check if image has 4 channels (RGB + NDVI)
     if image.shape[2] >= 3:
         plt.imshow(np.clip(image[:, :, :3], 0, 1))  # Show RGB channels
     else:
@@ -318,35 +273,28 @@ def main():
 
     args = parser.parse_args()
 
-    # Validate arguments
     if args.image_path is None and args.dataset_path is None:
         parser.error("Either --image_path or --dataset_path is required")
 
     if args.dataset_path is not None and args.image_index is None:
         parser.error("--image_index is required when using --dataset_path")
 
-    # Create output directory if needed
     output_dir = os.path.dirname(args.output_path)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
-    # Load model
     model = load_forest_detection_model(args.model_path)
 
-    # Load image
     if args.image_path:
         image = load_image(args.image_path)
     else:
         image = extract_from_dataset(args.dataset_path, args.image_index)
 
-    # Analyze forest coverage
     metrics, prediction = analyze_forest_coverage(model, image)
 
-    # Save visualization if requested
     if args.visualize:
         save_visualization(image[0], prediction, args.viz_path)
 
-    # Save metrics to JSON
     with open(args.output_path, "w") as f:
         json.dump(metrics, f, indent=2)
 

@@ -6,20 +6,10 @@ import matplotlib.pyplot as plt
 from model import build_forest_detection_model
 import ssl
 
-# Disable SSL verification temporarily
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def load_dataset(data_dir):
-    """
-    Load dataset from X_features.npy and y_masks.npy
-
-    Args:
-        data_dir (str): Path to directory containing dataset
-
-    Returns:
-        tuple: X (features), y (masks)
-    """
     # Load features
     X_path = os.path.join(data_dir, "X_features.npy")
     y_path = os.path.join(data_dir, "y_masks.npy")
@@ -37,17 +27,6 @@ def load_dataset(data_dir):
 
 
 def augment_dataset(X, y, augmentation_factor=3):
-    """
-    Perform data augmentation on the dataset
-
-    Args:
-        X (np.ndarray): Input features
-        y (np.ndarray): Input masks
-        augmentation_factor (int): Multiplicative factor for dataset augmentation
-
-    Returns:
-        tuple: Augmented X and y
-    """
     augmented_X = []
     augmented_y = []
 
@@ -83,17 +62,6 @@ def augment_dataset(X, y, augmentation_factor=3):
 def plot_augmentation_examples(
     X_orig, y_orig, X_aug, y_aug, num_examples=3, save_path=None
 ):
-    """
-    Visualize original and augmented images
-
-    Args:
-        X_orig (np.ndarray): Original features
-        y_orig (np.ndarray): Original masks
-        X_aug (np.ndarray): Augmented features
-        y_aug (np.ndarray): Augmented masks
-        num_examples (int): Number of examples to plot
-        save_path (str, optional): Path to save the plot
-    """
     plt.figure(figsize=(15, 5 * num_examples))
 
     for i in range(min(num_examples, len(X_orig))):
@@ -128,39 +96,32 @@ def plot_augmentation_examples(
 
 
 def main():
-    # Configuration
     DATA_DIR = "../../../data/processed/processed_ndvi_rgb/image_datasets"
     TRAIN_DIR = os.path.join(DATA_DIR, "train")
     VAL_DIR = os.path.join(DATA_DIR, "val")
     MODEL_DIR = "models/change_patterns/models"
     LOG_DIR = "models/change_patterns/logs"
 
-    # Print current directory for debugging
     print(f"Current directory: {os.getcwd()}")
     print(f"Using data directory: {DATA_DIR}")
     print(f"Train directory: {TRAIN_DIR}")
     print(f"Validation directory: {VAL_DIR}")
 
-    # Create directories if they don't exist
     os.makedirs(MODEL_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    # Training parameters
     EPOCHS = 10
     BATCH_SIZE = 16
     LEARNING_RATE = 1e-4
 
-    # Load datasets first to determine input shape
     print("Loading training dataset...")
     X_train, y_train = load_dataset(TRAIN_DIR)
 
-    # Dynamically set input shape
     INPUT_SHAPE = X_train.shape[1:]
     print(f"Input shape: {INPUT_SHAPE}")
 
     print(f"Original training set: {X_train.shape}, {y_train.shape}")
 
-    # Print class distribution information
     forest_pixel_ratio = np.mean(y_train)
     print(f"Forest pixel percentage: {forest_pixel_ratio * 100:.2f}%")
     print(
@@ -171,7 +132,6 @@ def main():
     X_train_aug, y_train_aug = augment_dataset(X_train, y_train, 3)
     print(f"Augmented training set: {X_train_aug.shape}, {y_train_aug.shape}")
 
-    # Plot augmentation examples
     aug_viz_path = os.path.join(LOG_DIR, "augmentation_examples.png")
     plot_augmentation_examples(
         X_train,
@@ -258,13 +218,6 @@ def main():
 
 
 def plot_training_history(history, save_path=None):
-    """
-    Plot training and validation metrics
-
-    Args:
-        history (tf.keras.callbacks.History): Training history
-        save_path (str, optional): Path to save the plot
-    """
     plt.figure(figsize=(15, 10))
 
     # Available metrics
@@ -321,16 +274,6 @@ def plot_training_history(history, save_path=None):
 
 
 def visualize_predictions(model, X_val, y_val, num_samples=5, save_path=None):
-    """
-    Visualize model predictions on validation set
-
-    Args:
-        model (tf.keras.Model): Trained model
-        X_val (np.ndarray): Validation images
-        y_val (np.ndarray): Validation masks
-        num_samples (int): Number of samples to visualize
-        save_path (str, optional): Path to save the plot
-    """
     # Predict on validation set
     predictions = model.predict(X_val[:num_samples])
 

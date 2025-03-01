@@ -1,0 +1,86 @@
+{
+  "change_metrics": {
+    "forest_coverage_t1": 21.27,
+    "forest_coverage_t2": 20.44,
+    "absolute_change": -0.83,
+    "relative_change_percentage": -3.9,
+    "deforested_percentage": 0.07,
+    "reforested_percentage": 0.15,
+    "detailed_changes": {
+      "forest_coverage_threshold_0.1_change": -2.46,
+      "forest_coverage_threshold_0.1_change_percent": -2.68,
+      "forest_coverage_threshold_0.3_change": -1.8,
+      "forest_coverage_threshold_0.3_change_percent": -12.46,
+      "forest_coverage_threshold_0.5_change": 0.07,
+      "forest_coverage_threshold_0.5_change_percent": 31.82,
+      "forest_coverage_threshold_0.7_change": 0.03,
+      "forest_coverage_threshold_0.7_change_percent": 150.0,
+      "forest_coverage_threshold_0.9_change": 0.0,
+      "forest_coverage_threshold_0.9_change_percent": 0.0,
+      "average_forest_coverage_change": -0.83,
+      "average_forest_coverage_change_percent": -3.9
+    }
+  },
+  "metadata": {
+    "location": {
+      "latitude": -18.9366,
+      "longitude": 27.2349
+    },
+    "time_period": {
+      "start_year": 2019,
+      "start_date": "2019-08-03",
+      "end_year": 2022,
+      "end_date": "2022-05-09"
+    }
+  },
+  "metrics_t1": {
+    "forest_coverage": {
+      "forest_coverage_threshold_0.1": 91.67,
+      "forest_coverage_threshold_0.3": 14.45,
+      "forest_coverage_threshold_0.5": 0.22,
+      "forest_coverage_threshold_0.7": 0.02,
+      "forest_coverage_threshold_0.9": 0.0,
+      "average_forest_coverage": 21.27
+    },
+    "pixel_statistics": {
+      "min_probability": 0.0028,
+      "max_probability": 0.7542,
+      "mean_probability": 0.2076,
+      "median_probability": 0.1982,
+      "std_probability": 0.0853
+    },
+    "connectivity": {
+      "forest_patches": 9,
+      "largest_patch_percentage": 0.02,
+      "average_patch_size_percentage": 0.02
+    },
+    "edge_metrics": {
+      "forest_edge_percentage": 0.22
+    }
+  },
+  "metrics_t2": {
+    "forest_coverage": {
+      "forest_coverage_threshold_0.1": 89.21,
+      "forest_coverage_threshold_0.3": 12.65,
+      "forest_coverage_threshold_0.5": 0.29,
+      "forest_coverage_threshold_0.7": 0.05,
+      "forest_coverage_threshold_0.9": 0.0,
+      "average_forest_coverage": 20.44
+    },
+    "pixel_statistics": {
+      "min_probability": 0.0008,
+      "max_probability": 0.8741,
+      "mean_probability": 0.1989,
+      "median_probability": 0.1909,
+      "std_probability": 0.0885
+    },
+    "connectivity": {
+      "forest_patches": 11,
+      "largest_patch_percentage": 0.05,
+      "average_patch_size_percentage": 0.03
+    },
+    "edge_metrics": {
+      "forest_edge_percentage": 0.29
+    }
+  }
+}

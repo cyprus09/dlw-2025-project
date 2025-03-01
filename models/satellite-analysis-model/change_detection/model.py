@@ -15,16 +15,6 @@ from tensorflow.keras.models import Model
 
 
 def iou_threshold(threshold=0.1):
-    """
-    Create an IoU metric with a specific threshold
-
-    Args:
-        threshold (float): Threshold for binary classification
-
-    Returns:
-        function: IoU metric function
-    """
-
     def metric(y_true, y_pred):
         y_pred_binary = tf.cast(y_pred > threshold, tf.float32)
         y_true = tf.cast(y_true, tf.float32)
@@ -40,16 +30,6 @@ def iou_threshold(threshold=0.1):
 
 
 def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
-    """
-    Build a U-Net inspired model for forest detection with shape-matching layers
-
-    Args:
-        input_shape (tuple): Input image shape
-        use_pretrained (bool): Use pretrained weights for backbone
-
-    Returns:
-        tf.keras.Model: Compiled forest detection model
-    """
     # Input layer
     inputs = Input(shape=input_shape)
 
@@ -124,7 +104,6 @@ def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
             "accuracy",
             tf.keras.metrics.Precision(),
             tf.keras.metrics.Recall(),
-            # IoU metrics at different thresholds
             iou_threshold(0.1),
             iou_threshold(0.3),
             iou_threshold(0.5),

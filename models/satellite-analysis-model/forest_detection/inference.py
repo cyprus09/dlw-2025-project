@@ -11,7 +11,6 @@ import seaborn as sns
 import argparse
 
 def dice_loss(y_true, y_pred):
-    """Dice loss function for segmentation"""
     smooth = 1.0
     y_true_f = tf.reshape(y_true, [-1])
     y_pred_f = tf.reshape(y_pred, [-1])
@@ -22,7 +21,6 @@ def dice_loss(y_true, y_pred):
 
 
 def combined_loss(y_true, y_pred):
-    """Combination of binary crossentropy and dice loss"""
     bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
     dice = dice_loss(y_true, y_pred)
     return bce + dice
@@ -33,7 +31,6 @@ def custom_iou(y_true, y_pred, threshold=0.5):
     # Apply threshold to predictions
     y_pred = tf.cast(y_pred > threshold, tf.float32)
 
-    # Calculate intersection and union
     intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
     union = (
         tf.reduce_sum(y_true, axis=[1, 2, 3])
@@ -140,7 +137,6 @@ def plot_precision_recall_curve(y_true_flat, y_pred_flat, save_path=None):
 
 
 def plot_confusion_matrix(y_true_flat, y_pred_flat, threshold=0.5, save_path=None):
-    # Convert both to binary format
     y_true_binary = (y_true_flat > 0.5).astype(int)
     y_pred_binary = (y_pred_flat > threshold).astype(int)
 
@@ -191,7 +187,6 @@ def visualize_predictions(X_test, y_test, y_pred, num_samples=10, save_dir=None)
     for i, idx in enumerate(indices):
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
-        # Display RGB image
         rgb_img = X_test[idx, :, :, :3]
         if rgb_img.max() > 1.0:  # Normalize if needed
             rgb_img = rgb_img / 255.0
@@ -220,7 +215,6 @@ def visualize_predictions(X_test, y_test, y_pred, num_samples=10, save_dir=None)
 
 
 def calculate_forest_percentage(masks):
-    """Calculate percentage of forest in the masks"""
     forest_pixels = np.sum(masks > 0.5)
     total_pixels = masks.size
     return (forest_pixels / total_pixels) * 100
@@ -232,14 +226,12 @@ def predict_on_new_image(model, image_path, output_path=None):
     )
     image = np.random.random((1, 64, 64, 4))  # RGB + NDVI
 
-    # Make prediction
     prediction = model.predict(image)
 
-    # Visualize
     plt.figure(figsize=(12, 6))
 
     plt.subplot(1, 2, 1)
-    plt.imshow(image[0, :, :, :3])  # Show RGB channels
+    plt.imshow(image[0, :, :, :3])
     plt.title("Input Image (RGB channels)")
     plt.axis("off")
 
@@ -256,7 +248,6 @@ def predict_on_new_image(model, image_path, output_path=None):
     else:
         plt.show()
 
-    # Calculate forest percentage
     forest_percentage = np.mean(prediction > 0.5) * 100
     print(f"Predicted forest coverage: {forest_percentage:.2f}%")
 
@@ -264,7 +255,6 @@ def predict_on_new_image(model, image_path, output_path=None):
 
 
 def main():
-    # Parse command line arguments
     parser = argparse.ArgumentParser(description="Forest Detection Model Inference")
     parser.add_argument(
         "--model_path", type=str, required=True, help="Path to the trained model"
@@ -296,42 +286,33 @@ def main():
 
     args = parser.parse_args()
 
-    # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Load the model with custom loss and metrics
     print(f"Loading model from {args.model_path}")
     model = load_model_with_custom_objects(args.model_path)
 
     if args.single_image:
-        # Predict on a single image
         output_path = os.path.join(args.output_dir, "single_prediction.png")
         predict_on_new_image(model, args.single_image, output_path)
     else:
-        # Evaluate on test set
         print(f"Loading test dataset from {args.test_dir}")
         X_test, y_test = load_dataset(args.test_dir)
         print(f"Test set: {X_test.shape}, {y_test.shape}")
 
-        # Evaluate model
         metrics, y_pred = evaluate_model(model, X_test, y_test)
 
-        # Flatten predictions and ground truth for metrics
         y_true_flat = y_test.reshape(-1)
         y_pred_flat = y_pred.reshape(-1)
 
-        # Print shape information for debugging
         print(f"y_true_flat shape: {y_true_flat.shape}")
         print(f"y_true_flat range: Min={y_true_flat.min()}, Max={y_true_flat.max()}")
         print(f"y_pred_flat shape: {y_pred_flat.shape}")
         print(f"y_pred_flat range: Min={y_pred_flat.min()}, Max={y_pred_flat.max()}")
 
-        # Plot precision-recall curve
         pr_curve_path = os.path.join(args.output_dir, "precision_recall_curve.png")
         plot_precision_recall_curve(y_true_flat, y_pred_flat, save_path=pr_curve_path)
         print(f"Precision-recall curve saved to {pr_curve_path}")
 
-        # Plot confusion matrix
         cm_path = os.path.join(
             args.output_dir, f"confusion_matrix_t{args.threshold}.png"
         )
