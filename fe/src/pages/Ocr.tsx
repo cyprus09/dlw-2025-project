@@ -2,14 +2,32 @@ import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { API_ENDPOINTS } from "../config/api";
 
-interface OCRResponse {
+interface StructuredAnalysisResponse {
     filename: string;
     ocr_text: string;
+    structured_response: {
+        summary_of_invoice: string;
+        invoice_number: string;
+        date: string;
+        total_amount: number;
+        vendor: string;
+    };
+    usage: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
 }
 
 export default function Ocr() {
     const [file, setFile] = useState<File | null>(null);
     const [extractedText, setExtractedText] = useState<string>("");
+    const [structuredData, setStructuredData] = useState<
+        StructuredAnalysisResponse["structured_response"] | null
+    >(null);
+    const [usageStats, setUsageStats] = useState<
+        StructuredAnalysisResponse["usage"] | null
+    >(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
@@ -53,6 +71,8 @@ export default function Ocr() {
         setUploadError("");
         setUploadSuccess(false);
         setProcessingStage("Uploading file...");
+        setStructuredData(null);
+        setUsageStats(null);
 
         try {
             // Create a FormData instance
@@ -64,12 +84,12 @@ export default function Ocr() {
 
             if (fileToUpload.type === "application/pdf") {
                 // Use PDF-specific endpoint
-                endpoint = API_ENDPOINTS.ocr.upload;
+                endpoint = API_ENDPOINTS.ocr.analyze;
                 formData.append("file_type", "pdf");
                 setProcessingStage("Processing PDF document...");
             } else if (fileToUpload.type.startsWith("image/")) {
                 // Use image-specific endpoint
-                endpoint = API_ENDPOINTS.ocr.upload;
+                endpoint = API_ENDPOINTS.ocr.analyze;
                 formData.append("file_type", "image");
                 setProcessingStage("Processing image...");
             } else {
@@ -90,12 +110,14 @@ export default function Ocr() {
                 );
             }
 
-            const data: OCRResponse = await response.json();
+            const data: StructuredAnalysisResponse = await response.json();
 
-            setProcessingStage("Extracting text...");
+            setProcessingStage("Extracting text and analyzing content...");
             setExtractedText(data.ocr_text);
+            setStructuredData(data.structured_response);
+            setUsageStats(data.usage);
             setUploadSuccess(true);
-            setProcessingStage("Text extraction complete");
+            setProcessingStage("Analysis complete");
         } catch (error) {
             console.error("Error processing document:", error);
             setUploadError(
@@ -112,6 +134,8 @@ export default function Ocr() {
     const handleRemoveFile = () => {
         setFile(null);
         setExtractedText("");
+        setStructuredData(null);
+        setUsageStats(null);
         setUploadSuccess(false);
         setUploadError(null);
         setProcessingStage("");
@@ -132,11 +156,10 @@ export default function Ocr() {
                     <div className="flex h-full flex-col items-center justify-center">
                         <div className="mb-8 text-center">
                             <h1 className="mb-2 text-3xl font-bold text-gray-800">
-                                OCR Text Extraction
+                                Upload a Project Report
                             </h1>
                             <p className="text-gray-600">
-                                Upload an image or PDF to extract text using OCR
-                                technology
+                                Upload an image or PDF to analyze it
                             </p>
                         </div>
                         <div
@@ -380,6 +403,93 @@ export default function Ocr() {
                                 </div>
                             ) : uploadSuccess ? (
                                 <div className="flex flex-1 flex-col">
+                                    {structuredData && (
+                                        <div className="mb-4 rounded-lg bg-white border border-gray-200 p-4 shadow-sm">
+                                            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                                                Invoice Details
+                                            </h3>
+                                            <div className="flex flex-col mb-2">
+                                                <span className="text-sm font-medium text-gray-500">
+                                                    Summary
+                                                </span>
+                                                <span className="text-base font-medium text-gray-900">
+                                                    {
+                                                        structuredData.summary_of_invoice
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-gray-500">
+                                                        Invoice Number
+                                                    </span>
+                                                    <span className="text-base font-medium text-gray-900">
+                                                        {
+                                                            structuredData.invoice_number
+                                                        }
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-gray-500">
+                                                        Date
+                                                    </span>
+                                                    <span className="text-base font-medium text-gray-900">
+                                                        {structuredData.date}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-gray-500">
+                                                        Vendor
+                                                    </span>
+                                                    <span className="text-base font-medium text-gray-900">
+                                                        {structuredData.vendor}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium text-gray-500">
+                                                        Total Amount
+                                                    </span>
+                                                    <span className="text-base font-medium text-gray-900">
+                                                        $
+                                                        {structuredData.total_amount.toFixed(
+                                                            2
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {usageStats && (
+                                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                                    <details className="text-xs text-gray-500">
+                                                        <summary className="cursor-pointer font-medium">
+                                                            API Usage Stats
+                                                        </summary>
+                                                        <div className="mt-2 pl-2">
+                                                            <p>
+                                                                Prompt Tokens:{" "}
+                                                                {
+                                                                    usageStats.prompt_tokens
+                                                                }
+                                                            </p>
+                                                            <p>
+                                                                Completion
+                                                                Tokens:{" "}
+                                                                {
+                                                                    usageStats.completion_tokens
+                                                                }
+                                                            </p>
+                                                            <p>
+                                                                Total Tokens:{" "}
+                                                                {
+                                                                    usageStats.total_tokens
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                    </details>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="mb-2 flex items-center">
                                         <svg
                                             className="mr-2 h-5 w-5 text-gray-500"
@@ -408,7 +518,7 @@ export default function Ocr() {
                                             <polyline points="10 9 9 9 8 9"></polyline>
                                         </svg>
                                         <span className="text-sm font-medium text-gray-700">
-                                            Text extracted from{" "}
+                                            Raw Extracted Text from{" "}
                                             <span className="font-semibold">
                                                 {file?.name}
                                             </span>

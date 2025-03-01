@@ -56,6 +56,7 @@ async def upload_and_analyze(file: UploadFile = File(...), file_type: str = Form
         class InvoiceData(BaseModel):
             """Pydantic model for invoice data extraction."""
 
+            summary_of_invoice: str
             invoice_number: str
             date: str
             total_amount: float

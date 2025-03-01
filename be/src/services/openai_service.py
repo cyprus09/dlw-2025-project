@@ -1,7 +1,7 @@
 """Service for interacting with OpenAI's API for text analysis and structured data extraction."""
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -81,12 +81,12 @@ async def analyze_text_with_query(query: str, text: str) -> Dict[str, Any]:
     )
 
 
-async def analyze_text_with_schema(text: str, schema: BaseModel) -> Dict[str, Any]:
+async def analyze_text_with_schema(text: str, schema: Type[BaseModel]) -> Dict[str, Any]:
     """Analyze text based on a provided schema type using OpenAI's beta.chat.completions.parse method.
 
     Args:
         text: The text to analyze
-        schema: The schema model to use for structured data extraction
+        schema: The schema model class to use for structured data extraction
 
     Returns:
         Dictionary containing the structured response and usage statistics

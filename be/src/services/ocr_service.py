@@ -43,6 +43,10 @@ async def extract_text_from_pdf(pdf_file: UploadFile) -> Dict[str, Any]:
             if page_text.strip():
                 result["has_text"] = True
 
+            # Initialize text_content as a list if it doesn't exist
+            if "text_content" not in result:
+                result["text_content"] = []
+
             result["text_content"].append(page_dict)
 
             # Extract images using the get_images method
@@ -70,13 +74,17 @@ async def extract_text_from_pdf(pdf_file: UploadFile) -> Dict[str, Any]:
                 page_images.append(image_info)
 
                 # Add image OCR text to the page text if it contains content
-                if ocr_text.strip():
+                if ocr_text.strip() and len(result["text_content"]) > page_num:
                     result["text_content"][page_num][
                         "text"
                     ] += f"\n[IMAGE TEXT: {ocr_text.strip()}]"
                     result["has_text"] = True
 
             if page_images:
+                # Initialize image_content as a list if it doesn't exist
+                if "image_content" not in result:
+                    result["image_content"] = []
+
                 result["image_content"].append(
                     {"page_num": page_num + 1, "images": page_images}
                 )
@@ -141,7 +149,9 @@ async def extract_text_from_image(image_file: UploadFile) -> str:
         raise Exception(f"Error extracting text from image: {str(e)}")
 
 
-async def process_document(file: UploadFile, file_type: str = None) -> Dict[str, Any]:
+async def process_document(
+    file: UploadFile, file_type: str | None = None
+) -> Dict[str, Any]:
     """
     Process a document file and extract text and/or images if possible.
 
