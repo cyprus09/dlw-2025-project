@@ -58,6 +58,9 @@ function App() {
                                 <Button
                                     size="lg"
                                     className="px-8 bg-[#7aa56a] hover:bg-[#7aa56a]/90 text-[#1E3A2F]"
+                                    onClick={() =>
+                                        (window.location.href = "/process")
+                                    }
                                 >
                                     <span className="mr-2">🌟</span>
                                     Verify Claims
@@ -71,6 +74,9 @@ function App() {
                                     size="lg"
                                     variant="outline"
                                     className="px-8 border-[#7aa56a] text-[#7aa56a] hover:bg-[#7aa56a]/10 bg-transparent hover:text-[#7aa56a]"
+                                    onClick={() =>
+                                        (window.location.href = "/process")
+                                    }
                                 >
                                     <span className="mr-2">📚</span>
                                     Learn More

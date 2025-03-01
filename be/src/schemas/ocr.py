@@ -63,16 +63,6 @@ class ProjectLocation(BaseModel):
     provinces: List[str] = Field(
         ..., description="List of provinces, states, or districts in the project"
     )
-    total_area_ha: float = Field(
-        ..., description="Total project area in hectares, as stated by the document"
-    )
-    forest_area_ha: float = Field(
-        ..., description="Forest area in hectares, if different from total_area_ha"
-    )
-    geojson_link_or_coords: Optional[str] = Field(
-        None,
-        description="Link to or snippet of KML/GeoJSON geometry describing the project boundary if available",
-    )
 
 
 class ProjectActivity(BaseModel):

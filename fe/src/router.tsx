@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "./App";
-import Ocr from "./pages/Ocr";
-import StructuredOutput from "./pages/StructuredOutput";
+import Process from "./pages/Process";
+import Loading from "./pages/Loading";
 
 export const router = createBrowserRouter([
     {
@@ -9,11 +9,11 @@ export const router = createBrowserRouter([
         element: <App />,
     },
     {
-        path: "/ocr",
-        element: <Ocr />,
+        path: "/process",
+        element: <Process />,
     },
     {
-        path: "/structured-output",
-        element: <StructuredOutput />,
+        path: "/loading",
+        element: <Loading />,
     },
 ]);

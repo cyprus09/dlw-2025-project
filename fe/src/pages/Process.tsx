@@ -1,5 +1,6 @@
 import {
     Calculator,
+    CheckCircle,
     Lightbulb,
     MapPin,
     Notebook,
@@ -20,8 +21,6 @@ interface StructuredAnalysisResponse {
         location: {
             country: string;
             provinces: string[];
-            total_area_ha: number;
-            forest_area_ha: number;
         };
         claimed_reductions: {
             total_claimed_tCO2e: number;
@@ -45,14 +44,10 @@ interface StructuredAnalysisResponse {
     };
 }
 
-export default function Ocr() {
+export default function Process() {
     const [file, setFile] = useState<File | null>(null);
-    const [extractedText, setExtractedText] = useState<string>("");
     const [structuredData, setStructuredData] = useState<
         StructuredAnalysisResponse["structured_response"] | null
-    >(null);
-    const [usageStats, setUsageStats] = useState<
-        StructuredAnalysisResponse["usage"] | null
     >(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -98,7 +93,6 @@ export default function Ocr() {
         setUploadSuccess(false);
         setProcessingStage("Uploading file...");
         setStructuredData(null);
-        setUsageStats(null);
 
         try {
             // Create a FormData instance
@@ -139,9 +133,7 @@ export default function Ocr() {
             const data: StructuredAnalysisResponse = await response.json();
 
             setProcessingStage("Extracting text and analyzing content...");
-            setExtractedText(data.ocr_text);
             setStructuredData(data.structured_response);
-            setUsageStats(data.usage);
             setUploadSuccess(true);
             setProcessingStage("Analysis complete");
         } catch (error) {
@@ -159,9 +151,7 @@ export default function Ocr() {
 
     const handleRemoveFile = () => {
         setFile(null);
-        setExtractedText("");
         setStructuredData(null);
-        setUsageStats(null);
         setUploadSuccess(false);
         setUploadError(null);
         setProcessingStage("");
@@ -171,7 +161,6 @@ export default function Ocr() {
     useEffect(() => {
         if (file) {
             setUploadSuccess(false);
-            setExtractedText("");
         }
     }, [file]);
 
@@ -184,10 +173,10 @@ export default function Ocr() {
                         <div className="flex flex-col items-center justify-center h-full">
                             <div className="mb-8 text-center">
                                 <h1 className="mb-2 text-3xl font-bold text-gray-800">
-                                    Upload a Project Report
+                                    Project Report Verification
                                 </h1>
                                 <p className="text-gray-600">
-                                    Upload an image or PDF to analyze it
+                                    Upload an image or PDF to verify it
                                 </p>
                             </div>
                             <div
@@ -369,36 +358,6 @@ export default function Ocr() {
                                     </div>
                                 ) : uploadError ? (
                                     <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-red-50 p-6 text-center">
-                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                                            <svg
-                                                className="h-8 w-8 text-red-600"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <circle
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                ></circle>
-                                                <line
-                                                    x1="15"
-                                                    y1="9"
-                                                    x2="9"
-                                                    y2="15"
-                                                ></line>
-                                                <line
-                                                    x1="9"
-                                                    y1="9"
-                                                    x2="15"
-                                                    y2="15"
-                                                ></line>
-                                            </svg>
-                                        </div>
                                         <h3 className="mb-2 text-lg font-medium text-red-800">
                                             Processing Error
                                         </h3>
@@ -416,10 +375,10 @@ export default function Ocr() {
                                         </Button>
                                     </div>
                                 ) : uploadSuccess ? (
-                                    <div className="flex flex-1 flex-col">
-                                        {structuredData && (
-                                            <div className="mb-4 rounded-lg">
-                                                <div>
+                                    <>
+                                        <div className="flex flex-1 flex-col h-[calc(100%-3rem)] overflow-y-scroll scrollbar-hide">
+                                            {structuredData && (
+                                                <div className="mb-4 rounded-lg">
                                                     <div className="space-y-6">
                                                         {/* Project Header */}
                                                         <div className="bg-white rounded-lg p-5 shadow border border-gray-100">
@@ -496,26 +455,6 @@ export default function Ocr() {
                                                                                 )
                                                                             )}
                                                                         </div>
-                                                                    </div>
-                                                                    <div className="flex items-center">
-                                                                        <span className="font-medium text-gray-700 w-24">
-                                                                            Total
-                                                                            Area:
-                                                                        </span>
-                                                                        <span className="text-gray-600">
-                                                                            {structuredData.location.total_area_ha.toLocaleString()}{" "}
-                                                                            hectares
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center">
-                                                                        <span className="font-medium text-gray-700 w-24">
-                                                                            Forest
-                                                                            Area:
-                                                                        </span>
-                                                                        <span className="text-gray-600">
-                                                                            {structuredData.location.forest_area_ha.toLocaleString()}{" "}
-                                                                            hectares
-                                                                        </span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -630,30 +569,6 @@ export default function Ocr() {
                                                                 </div>
                                                                 <div>
                                                                     <h4 className="font-medium text-gray-700">
-                                                                        Possible
-                                                                        Inconsistencies:
-                                                                    </h4>
-                                                                    <ul className="list-disc pl-5 mt-1 space-y-1 text-gray-600">
-                                                                        {structuredData.thinkingSpace.possible_inconsistencies.map(
-                                                                            (
-                                                                                inc,
-                                                                                index
-                                                                            ) => (
-                                                                                <li
-                                                                                    key={
-                                                                                        index
-                                                                                    }
-                                                                                >
-                                                                                    {
-                                                                                        inc
-                                                                                    }
-                                                                                </li>
-                                                                            )
-                                                                        )}
-                                                                    </ul>
-                                                                </div>
-                                                                <div>
-                                                                    <h4 className="font-medium text-gray-700">
                                                                         Suggestions
                                                                         for
                                                                         Further
@@ -695,39 +610,19 @@ export default function Ocr() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                            )}
+                                        </div>
+                                        <Button
+                                            className="w-full text-md"
+                                            size={"lg"}
+                                        >
+                                            <CheckCircle className="h-5 w-5 text-white" />
+                                            Verify Report
+                                        </Button>
+                                    </>
                                 ) : (
                                     <div className="flex flex-1 flex-col items-center justify-center text-center">
-                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                                            <svg
-                                                className="h-8 w-8 text-emerald-600"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                                <polyline points="14 2 14 8 20 8"></polyline>
-                                                <line
-                                                    x1="16"
-                                                    y1="13"
-                                                    x2="8"
-                                                    y2="13"
-                                                ></line>
-                                                <line
-                                                    x1="16"
-                                                    y1="17"
-                                                    x2="8"
-                                                    y2="17"
-                                                ></line>
-                                                <polyline points="10 9 9 9 8 9"></polyline>
-                                            </svg>
-                                        </div>
+                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100"></div>
                                         <h3 className="mb-2 text-lg font-medium text-gray-800">
                                             Ready to Process
                                         </h3>
