@@ -1,11 +1,10 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import "./App.css";
+import { Navbar } from "./components/Navbar";
 
 function App() {
-    const [activeTab, setActiveTab] = useState("home");
     const { scrollYProgress } = useScroll();
     const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
     const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
@@ -13,97 +12,7 @@ function App() {
     return (
         <div className="min-h-screen bg-background text-foreground">
             {/* Navigation Bar */}
-            <nav className="sticky top-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="flex items-center space-x-2"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                            <span className="text-primary-foreground font-bold text-xl">
-                                CV
-                            </span>
-                        </div>
-                        <span className="font-bold text-xl">CarbonVerify</span>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                        className="hidden md:flex space-x-8"
-                    >
-                        <button
-                            onClick={() => setActiveTab("home")}
-                            className={`${
-                                activeTab === "home"
-                                    ? "text-primary font-medium"
-                                    : "text-muted-foreground"
-                            } hover:text-primary transition-colors`}
-                        >
-                            Home
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("about")}
-                            className={`${
-                                activeTab === "about"
-                                    ? "text-primary font-medium"
-                                    : "text-muted-foreground"
-                            } hover:text-primary transition-colors`}
-                        >
-                            About
-                        </button>
-                        <Link
-                            to="/ocr"
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                        >
-                            OCR
-                        </Link>
-                        <Link
-                            to="/structured-output"
-                            className="text-muted-foreground hover:text-primary transition-colors"
-                        >
-                            Structured Output
-                        </Link>
-                        <button
-                            onClick={() => setActiveTab("how")}
-                            className={`${
-                                activeTab === "how"
-                                    ? "text-primary font-medium"
-                                    : "text-muted-foreground"
-                            } hover:text-primary transition-colors`}
-                        >
-                            How It Works
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("contact")}
-                            className={`${
-                                activeTab === "contact"
-                                    ? "text-primary font-medium"
-                                    : "text-muted-foreground"
-                            } hover:text-primary transition-colors`}
-                        >
-                            Contact
-                        </button>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <Button
-                            variant="default"
-                            size="default"
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                            Get Started
-                        </Button>
-                    </motion.div>
-                </div>
-            </nav>
+            <Navbar />
 
             {/* Hero Section */}
             <section className="py-20 md:py-32 container mx-auto px-4 relative overflow-hidden">

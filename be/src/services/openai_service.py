@@ -1,5 +1,6 @@
 """Service for interacting with OpenAI's API for text analysis and structured data extraction."""
 
+import logging
 import os
 from typing import Any, Dict, List, Optional, Type
 
@@ -81,7 +82,9 @@ async def analyze_text_with_query(query: str, text: str) -> Dict[str, Any]:
     )
 
 
-async def analyze_text_with_schema(text: str, schema: Type[BaseModel]) -> Dict[str, Any]:
+async def analyze_text_with_schema(
+    text: str, schema: Type[BaseModel]
+) -> Dict[str, Any]:
     """Analyze text based on a provided schema type using OpenAI's beta.chat.completions.parse method.
 
     Args:
@@ -91,19 +94,26 @@ async def analyze_text_with_schema(text: str, schema: Type[BaseModel]) -> Dict[s
     Returns:
         Dictionary containing the structured response and usage statistics
     """
+    logging.info(f"Starting analyze_text_with_schema with schema: {schema.__name__}")
+    logging.info(f"Text length: {len(text)} characters")
+
     try:
+        logging.info("Preparing to call OpenAI API with parse method")
         completion = client.beta.chat.completions.parse(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful assistant that analyzes document data and provides structured output.",
+                    "content": (
+                        "You are a helpful assistant that extracts structured data from carbon offset project documents. "
+                        "Please follow the given ProjectAnalysisSchema exactly. Output valid JSON only."
+                    ),
                 },
                 {
                     "role": "user",
                     "content": (
-                        f"Analyze the following text and extract information "
-                        f"according to the provided schema:\n\n{text}"
+                        f"Analyze the following text (a project description or PDF OCR). "
+                        f"Return data in JSON that fits the ProjectAnalysisSchema:\n\n{text}"
                     ),
                 },
             ],
@@ -111,9 +121,16 @@ async def analyze_text_with_schema(text: str, schema: Type[BaseModel]) -> Dict[s
             temperature=0.3,  # Lower temperature for more focused responses
         )
 
+        logging.info("Successfully received response from OpenAI API")
+        logging.info(
+            f"Token usage - Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}, Total: {completion.usage.total_tokens}"
+        )
+
         # Get the parsed response
         parsed_data = completion.choices[0].message.parsed
+        logging.info("Successfully parsed response data")
 
+        logging.info("Returning structured response")
         return {
             "structured_response": parsed_data.model_dump(),
             "usage": {
@@ -127,5 +144,7 @@ async def analyze_text_with_schema(text: str, schema: Type[BaseModel]) -> Dict[s
         import traceback
 
         error_traceback = traceback.format_exc()
+        logging.error(f"Error in analyze_text_with_schema: {str(e)}")
+        logging.error(f"Traceback: {error_traceback}")
         print(f"Error in analyze_text_with_schema: {str(e)}\n{error_traceback}")
         raise Exception(f"Error generating structured output: {str(e)}")

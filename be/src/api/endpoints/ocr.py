@@ -1,13 +1,19 @@
 """API endpoints for OCR (Optical Character Recognition) functionality."""
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from pydantic import BaseModel
+import logging
 
-from ...schemas.ocr import OCRResponse, StructuredAnalysisResponse
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+from ...schemas.ocr import (
+    OCRResponse,
+    ProjectAnalysisSchema,
+    StructuredAnalysisResponse,
+)
 from ...services.ocr_service import process_document
 from ...services.openai_service import analyze_text_with_schema
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/upload", response_model=OCRResponse, status_code=200)
@@ -44,29 +50,31 @@ async def upload_and_analyze(file: UploadFile = File(...), file_type: str = Form
         file: The file to process
         file_type: Type of file ('image' or 'pdf')
     """
+    logger.info(
+        f"Starting upload_and_analyze with file: {file.filename}, type: {file_type}"
+    )
+
     if file_type not in ["image", "pdf"]:
+        logger.warning(f"Invalid file type provided: {file_type}")
         raise HTTPException(
             status_code=400, detail="Invalid file type. Supported types: 'image', 'pdf'"
         )
-
     try:
-        # First upload and extract OCR
+        # 1) OCR the file
+        logger.info("Step 1: Starting OCR processing")
         ocr_result = await process_document(file, file_type)
-
-        class InvoiceData(BaseModel):
-            """Pydantic model for invoice data extraction."""
-
-            summary_of_invoice: str
-            invoice_number: str
-            date: str
-            total_amount: float
-            vendor: str
-
-        # Then analyze with the schema type
-        analysis_result = await analyze_text_with_schema(
-            ocr_result["ocr_text"], InvoiceData
+        logger.info(
+            f"OCR processing complete. Extracted {len(ocr_result['ocr_text'])} characters"
         )
 
+        # 2) Use the more complex ProjectAnalysisSchema
+        logger.info("Step 2: Starting text analysis with schema")
+        analysis_result = await analyze_text_with_schema(
+            ocr_result["ocr_text"], ProjectAnalysisSchema
+        )
+        logger.info("Text analysis complete")
+
+        logger.info("Returning structured response")
         return StructuredAnalysisResponse(
             filename=ocr_result["filename"],
             ocr_text=ocr_result["ocr_text"],
@@ -74,6 +82,8 @@ async def upload_and_analyze(file: UploadFile = File(...), file_type: str = Form
             usage=analysis_result["usage"],
         )
     except HTTPException as e:
+        logger.error(f"HTTP exception in upload_and_analyze: {str(e)}")
         raise e
     except Exception as e:
+        logger.error(f"Exception in upload_and_analyze: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
