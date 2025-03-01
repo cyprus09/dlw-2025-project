@@ -36,10 +36,12 @@ export function Navbar() {
                 >
                     <div className="w-10 h-10 rounded-full bg-[#7aa56a] flex items-center justify-center">
                         <span className="text-[#1E3A2F] font-bold text-xl">
-                            T
+                            TBD
                         </span>
                     </div>
-                    <span className="font-bold text-xl text-white">TBD.</span>
+                    <span className="font-bold text-xl text-white">
+                        TrueCarbon
+                    </span>
                 </motion.div>
 
                 <motion.div

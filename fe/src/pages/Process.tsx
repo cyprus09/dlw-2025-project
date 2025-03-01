@@ -10,6 +10,10 @@ import { useEffect, useState } from "react";
 import { Navbar } from "../components/Navbar";
 import { Button } from "../components/ui/button";
 import { API_ENDPOINTS } from "../config/api";
+import { FileUpload } from "@/components/FileUpload";
+import { FilePreview } from "@/components/FilePreview";
+import Loading from "./Loading";
+import CarbonInsights from "./CarbonInsights";
 
 interface StructuredAnalysisResponse {
     filename: string;
@@ -51,47 +55,24 @@ export default function Process() {
     >(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
-    const [dragActive, setDragActive] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
-    const [processingStage, setProcessingStage] = useState<string>("");
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const selectedFile = e.target.files[0];
-            setFile(selectedFile);
-            uploadFile(selectedFile);
-        }
-    };
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [verificationStatus, setVerificationStatus] = useState<
+        "idle" | "success" | "error"
+    >("idle");
 
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-    };
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const droppedFile = e.dataTransfer.files[0];
-            setFile(droppedFile);
-            uploadFile(droppedFile);
-        }
+    const handleRemoveFile = () => {
+        setFile(null);
+        setStructuredData(null);
+        setUploadSuccess(false);
+        setUploadError(null);
     };
 
     const uploadFile = async (fileToUpload: File) => {
         setIsUploading(true);
         setUploadError("");
         setUploadSuccess(false);
-        setProcessingStage("Uploading file...");
         setStructuredData(null);
 
         try {
@@ -106,12 +87,10 @@ export default function Process() {
                 // Use PDF-specific endpoint
                 endpoint = API_ENDPOINTS.ocr.analyze;
                 formData.append("file_type", "pdf");
-                setProcessingStage("Processing PDF document...");
             } else if (fileToUpload.type.startsWith("image/")) {
                 // Use image-specific endpoint
                 endpoint = API_ENDPOINTS.ocr.analyze;
                 formData.append("file_type", "image");
-                setProcessingStage("Processing image...");
             } else {
                 throw new Error(
                     "Unsupported file type. Please upload a PDF or image file."
@@ -132,10 +111,8 @@ export default function Process() {
 
             const data: StructuredAnalysisResponse = await response.json();
 
-            setProcessingStage("Extracting text and analyzing content...");
             setStructuredData(data.structured_response);
             setUploadSuccess(true);
-            setProcessingStage("Analysis complete");
         } catch (error) {
             console.error("Error processing document:", error);
             setUploadError(
@@ -143,18 +120,25 @@ export default function Process() {
                     ? error.message
                     : "An unknown error occurred"
             );
-            setProcessingStage("Error occurred");
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleRemoveFile = () => {
-        setFile(null);
-        setStructuredData(null);
-        setUploadSuccess(false);
-        setUploadError(null);
-        setProcessingStage("");
+    const verifyFile = async () => {
+        setIsVerifying(true);
+        setVerificationStatus("idle");
+
+        try {
+            // Mock verification delay
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            setVerificationStatus("success");
+        } catch (error) {
+            setVerificationStatus("error");
+            console.error("Verification error:", error);
+        } finally {
+            setIsVerifying(false);
+        }
     };
 
     // Reset states when changing files
@@ -164,184 +148,27 @@ export default function Process() {
         }
     }, [file]);
 
+    if (isVerifying) return <Loading />;
+    if (verificationStatus === "success") return <CarbonInsights />;
+
     return (
         <div className="flex flex-col h-screen">
             <Navbar />
             <div className="h-[calc(100vh-50px)] p-5 overflow-hidden">
                 <div className="h-full w-full">
                     {!file ? (
-                        <div className="flex flex-col items-center justify-center h-full">
-                            <div className="mb-8 text-center">
-                                <h1 className="mb-2 text-3xl font-bold text-gray-800">
-                                    Project Report Verification
-                                </h1>
-                                <p className="text-gray-600">
-                                    Upload an image or PDF to verify it
-                                </p>
-                            </div>
-                            <div
-                                className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-all w-7/12 ${
-                                    dragActive
-                                        ? "border-emerald-500 bg-emerald-50"
-                                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-                                }`}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                            >
-                                <div className="mb-4 text-center">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="mx-auto h-12 w-12 text-gray-400"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                        />
-                                    </svg>
-                                    <p className="mt-2 text-sm font-medium text-gray-700">
-                                        Drag & drop your file here, or
-                                    </p>
-                                </div>
-                                <input
-                                    id="file-upload"
-                                    type="file"
-                                    accept="image/*,application/pdf"
-                                    onChange={handleFileChange}
-                                    className="hidden"
-                                />
-                                <label htmlFor="file-upload">
-                                    <Button
-                                        type="button"
-                                        variant="default"
-                                        size="lg"
-                                        onClick={() =>
-                                            document
-                                                .getElementById("file-upload")
-                                                ?.click()
-                                        }
-                                        className="cursor-pointer"
-                                    >
-                                        Browse Files
-                                    </Button>
-                                </label>
-                                <p className="mt-2 text-xs text-gray-500">
-                                    Supported formats: JPG, PNG, PDF
-                                </p>
-                            </div>
-                        </div>
+                        <FileUpload
+                            onFileSelect={setFile}
+                            onUploadFile={uploadFile}
+                        />
                     ) : (
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 h-full">
                             {/* Left Column - File Display */}
                             <div className="rounded-lg border bg-white p-6 shadow-sm flex flex-col h-full">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-                                            {file.type.startsWith("image/") ? (
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-6 w-6 text-emerald-600"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                    />
-                                                </svg>
-                                            ) : (
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="h-6 w-6 text-emerald-600"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                    />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-800">
-                                                {file.name}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                {(file.size / 1024).toFixed(2)}{" "}
-                                                KB •{" "}
-                                                {file.type || "Unknown type"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleRemoveFile}
-                                        className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-5 w-5"
-                                            viewBox="0 0 20 20"
-                                            fill="currentColor"
-                                        >
-                                            <path
-                                                fillRule="evenodd"
-                                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                            />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <div className="mb-4 rounded-lg bg-gray-50 p-4 flex-1">
-                                    {file.type.startsWith("image/") ? (
-                                        <div className="flex justify-center">
-                                            <img
-                                                src={URL.createObjectURL(file)}
-                                                alt="Preview"
-                                                className="rounded-md object-contain"
-                                            />
-                                        </div>
-                                    ) : file.type === "application/pdf" ? (
-                                        <div className={"flex flex-col h-full"}>
-                                            <iframe
-                                                src={URL.createObjectURL(file)}
-                                                title="PDF Viewer"
-                                                className={`w-full rounded-t-md border-0 bg-white shadow-sm flex-1`}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 bg-gray-100 p-4">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="mb-2 h-10 w-10 text-gray-400"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                />
-                                            </svg>
-                                            <p className="text-center text-sm text-gray-600">
-                                                File preview not available
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
+                                <FilePreview
+                                    file={file}
+                                    onFileRemove={handleRemoveFile}
+                                />
                             </div>
 
                             {/* Right Column - Processing Status */}
@@ -350,7 +177,7 @@ export default function Process() {
                                     <div className="flex flex-1 flex-col items-center justify-center">
                                         <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-emerald-500"></div>
                                         <p className="mb-1 text-center text-lg font-medium text-gray-700">
-                                            {processingStage}
+                                            Processing...
                                         </p>
                                         <p className="text-center text-sm text-gray-500">
                                             This may take a moment...
@@ -374,7 +201,7 @@ export default function Process() {
                                             Try Again
                                         </Button>
                                     </div>
-                                ) : uploadSuccess ? (
+                                ) : uploadSuccess && structuredData ? (
                                     <>
                                         <div className="flex flex-1 flex-col h-[calc(100%-3rem)] overflow-y-scroll scrollbar-hide">
                                             {structuredData && (
@@ -615,35 +442,15 @@ export default function Process() {
                                         <Button
                                             className="w-full text-md"
                                             size={"lg"}
+                                            onClick={verifyFile}
                                         >
                                             <CheckCircle className="h-5 w-5 text-white" />
-                                            Verify Report
+                                            <span className="ml-2">
+                                                Verify Report
+                                            </span>
                                         </Button>
                                     </>
-                                ) : (
-                                    <div className="flex flex-1 flex-col items-center justify-center text-center">
-                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100"></div>
-                                        <h3 className="mb-2 text-lg font-medium text-gray-800">
-                                            Ready to Process
-                                        </h3>
-                                        <p className="mb-4 text-sm text-gray-600">
-                                            Click the button below to extract
-                                            text from your document.
-                                        </p>
-                                        <Button
-                                            onClick={() =>
-                                                uploadFile(file as File)
-                                            }
-                                            disabled={isUploading}
-                                            className="w-full"
-                                            size="lg"
-                                        >
-                                            {isUploading
-                                                ? "Processing..."
-                                                : "Process File"}
-                                        </Button>
-                                    </div>
-                                )}
+                                ) : null}
                             </div>
                         </div>
                     )}
