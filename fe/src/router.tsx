@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "./App";
-import HelloWorld from "./pages/HelloWorld";
+import Ocr from "./pages/Ocr";
 
 export const router = createBrowserRouter([
     {
@@ -8,7 +8,7 @@ export const router = createBrowserRouter([
         element: <App />,
     },
     {
-        path: "/hello",
-        element: <HelloWorld />,
+        path: "/ocr",
+        element: <Ocr />,
     },
 ]);

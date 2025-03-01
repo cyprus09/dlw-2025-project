@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
     base: API_BASE_URL,
     hello: `${API_BASE_URL}/`,
     ocr: {
-        extract: `${API_BASE_URL}/api/ocr/upload`,
+        pdf: `${API_BASE_URL}/api/ocr/upload-pdf`,
+        image: `${API_BASE_URL}/api/ocr/upload`,
     },
 } as const;
