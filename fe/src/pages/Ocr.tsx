@@ -47,8 +47,12 @@ interface StructuredAnalysisResponse {
 
 export default function Ocr() {
     const [file, setFile] = useState<File | null>(null);
+    const [extractedText, setExtractedText] = useState<string>("");
     const [structuredData, setStructuredData] = useState<
         StructuredAnalysisResponse["structured_response"] | null
+    >(null);
+    const [usageStats, setUsageStats] = useState<
+        StructuredAnalysisResponse["usage"] | null
     >(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -135,7 +139,9 @@ export default function Ocr() {
             const data: StructuredAnalysisResponse = await response.json();
 
             setProcessingStage("Extracting text and analyzing content...");
+            setExtractedText(data.ocr_text);
             setStructuredData(data.structured_response);
+            setUsageStats(data.usage);
             setUploadSuccess(true);
             setProcessingStage("Analysis complete");
         } catch (error) {
@@ -153,7 +159,9 @@ export default function Ocr() {
 
     const handleRemoveFile = () => {
         setFile(null);
+        setExtractedText("");
         setStructuredData(null);
+        setUsageStats(null);
         setUploadSuccess(false);
         setUploadError(null);
         setProcessingStage("");
@@ -163,6 +171,7 @@ export default function Ocr() {
     useEffect(() => {
         if (file) {
             setUploadSuccess(false);
+            setExtractedText("");
         }
     }, [file]);
 
@@ -347,7 +356,7 @@ export default function Ocr() {
                             </div>
 
                             {/* Right Column - Processing Status */}
-                            <div className="rounded-lg bg-white flex flex-col h-full overflow-y-scroll scrollbar-hide">
+                            <div className="rounded-lg flex flex-col h-full overflow-y-scroll scrollbar-hide">
                                 {isUploading ? (
                                     <div className="flex flex-1 flex-col items-center justify-center">
                                         <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-emerald-500"></div>
@@ -409,7 +418,7 @@ export default function Ocr() {
                                 ) : uploadSuccess ? (
                                     <div className="flex flex-1 flex-col">
                                         {structuredData && (
-                                            <div className="mb-4 rounded-lg bg-white">
+                                            <div className="mb-4 rounded-lg">
                                                 <div>
                                                     <div className="space-y-6">
                                                         {/* Project Header */}
