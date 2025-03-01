@@ -1,0 +1,27 @@
+{
+  "basic_change_metrics": {
+    "forest_coverage_t1": 0.39,
+    "forest_coverage_t2": 0.42,
+    "absolute_change": 0.03,
+    "relative_change_percentage": 7.69,
+    "deforested_percentage": 0.0,
+    "reforested_percentage": 0.02
+  },
+  "change_metrics": {
+    "mean_change_magnitude": 1.12,
+    "significant_change_percentage": 0.02
+  },
+  "fragmentation_metrics": {
+    "forest_patches_t1": 14,
+    "forest_patches_t2": 15,
+    "change_in_patches": 1,
+    "largest_patch_percentage_t1": 0.05,
+    "largest_patch_percentage_t2": 0.05,
+    "change_in_largest_patch": 0.0
+  },
+  "edge_metrics": {
+    "forest_edge_percentage_t1": 0.39,
+    "forest_edge_percentage_t2": 0.42,
+    "change_in_edge_percentage": 0.02
+  }
+}
