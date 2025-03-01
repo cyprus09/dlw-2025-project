@@ -7,21 +7,6 @@ interface OCRResponse {
     ocr_text: string;
 }
 
-// Mock API function with 5-second delay
-const mockOcrApi = (
-    file: File,
-    fileType: string
-): Promise<{ text: string }> => {
-    return new Promise((resolve) => {
-        console.log(`Processing ${fileType} file: ${file.name}`);
-        setTimeout(() => {
-            resolve({
-                text: `Successfully processed ${file.name}. This is mock extracted text from your ${fileType} file.`,
-            });
-        }, 5000); // 5 second delay
-    });
-};
-
 export default function Ocr() {
     const [file, setFile] = useState<File | null>(null);
     const [extractedText, setExtractedText] = useState<string>("");
@@ -79,11 +64,13 @@ export default function Ocr() {
 
             if (fileToUpload.type === "application/pdf") {
                 // Use PDF-specific endpoint
-                endpoint = API_ENDPOINTS.ocr.pdf;
+                endpoint = API_ENDPOINTS.ocr.upload;
+                formData.append("file_type", "pdf");
                 setProcessingStage("Processing PDF document...");
             } else if (fileToUpload.type.startsWith("image/")) {
                 // Use image-specific endpoint
-                endpoint = API_ENDPOINTS.ocr.image;
+                endpoint = API_ENDPOINTS.ocr.upload;
+                formData.append("file_type", "image");
                 setProcessingStage("Processing image...");
             } else {
                 throw new Error(

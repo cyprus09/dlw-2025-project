@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import "./App.css";
 
 function App() {
@@ -54,6 +55,18 @@ function App() {
                         >
                             About
                         </button>
+                        <Link
+                            to="/ocr"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            OCR
+                        </Link>
+                        <Link
+                            to="/structured-output"
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                        >
+                            Structured Output
+                        </Link>
                         <button
                             onClick={() => setActiveTab("how")}
                             className={`${
