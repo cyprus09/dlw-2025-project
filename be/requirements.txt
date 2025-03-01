@@ -21,6 +21,7 @@ urllib3-2.3.0
 
 # HTTP client
 httpx==0.28.1
+requests == 2.26.0
 
 # OpenAI and OCR dependencies
 openai==1.65.1

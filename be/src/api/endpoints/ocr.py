@@ -4,13 +4,13 @@ import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from ...schemas.ocr import (
+from src.schemas.ocr import (
     OCRResponse,
     ProjectAnalysisSchema,
     StructuredAnalysisResponse,
 )
-from ...services.ocr_service import process_document
-from ...services.openai_service import analyze_text_with_schema
+from src.services.ocr_service import process_document
+from src.services.openai_service import analyze_text_with_schema
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.endpoints import ml, ocr
+from api.endpoints import ml, ocr
 
 # Configure logging
 logging.basicConfig(

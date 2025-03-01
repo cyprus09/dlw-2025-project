@@ -27,7 +27,7 @@ This FastAPI backend provides the necessary APIs for the DLW 2025 web applicatio
 2. **Install dependencies:**
 
     ```sh
-    pip install -r requirements.txt
+  source .venv/bin/activate
     pip install -r requirements-dev.txt
     ```
 

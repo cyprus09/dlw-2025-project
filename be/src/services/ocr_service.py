@@ -5,7 +5,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import fitz  # PyMuPDF
 import pytesseract
@@ -168,7 +168,7 @@ async def extract_text_from_image(image_file: UploadFile) -> str:
 
 
 async def process_document(
-    file: UploadFile, file_type: str | None = None
+    file: UploadFile, file_type: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Process a document file and extract text and/or images if possible.
