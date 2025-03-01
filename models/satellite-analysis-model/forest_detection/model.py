@@ -1,61 +1,248 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D
+from tensorflow.keras.layers import (
+    concatenate,
+    Conv2DTranspose,
+    Dropout,
+    BatchNormalization,
+    Resizing,
+)
+import ssl
 
-def build_forest_detection_model(input_shape=(256, 256, 5)):
+# Disable SSL verification temporarily
+ssl._create_default_https_context = ssl._create_unverified_context
+
+
+# Define custom IoU metric with threshold
+def custom_iou(y_true, y_pred, threshold=0.5):
+    """Custom IoU metric with adjustable threshold"""
+    # Apply threshold to predictions
+    y_pred = tf.cast(y_pred > threshold, tf.float32)
+
+    # Calculate intersection and union
+    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
+    union = (
+        tf.reduce_sum(y_true, axis=[1, 2, 3])
+        + tf.reduce_sum(y_pred, axis=[1, 2, 3])
+        - intersection
+    )
+
+    # Add small epsilon to avoid division by zero
+    iou = tf.reduce_mean((intersection + 1e-7) / (union + 1e-7))
+    return iou
+
+
+# Define Dice loss
+def dice_loss(y_true, y_pred):
+    """Dice loss function for segmentation"""
+    smooth = 1.0
+    y_true_f = tf.reshape(y_true, [-1])
+    y_pred_f = tf.reshape(y_pred, [-1])
+    intersection = tf.reduce_sum(y_true_f * y_pred_f)
+    return 1.0 - (2.0 * intersection + smooth) / (
+        tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f) + smooth
+    )
+
+
+# Combined loss function
+def combined_loss(y_true, y_pred):
+    """Combination of binary crossentropy and dice loss"""
+    bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+    dice = dice_loss(y_true, y_pred)
+    return bce + dice
+
+
+# Create a function to make a custom IoU with a specific threshold
+def make_iou_threshold(threshold):
+    def iou_threshold(y_true, y_pred):
+        return custom_iou(y_true, y_pred, threshold)
+
+    iou_threshold.__name__ = f"iou_threshold_{threshold}"
+    return iou_threshold
+
+
+def build_forest_detection_model(input_shape=(64, 64, 4), use_pretrained=True):
     """
-    U-Net architecture for forest cover segmentation.
-    
+    U-Net architecture for forest cover segmentation with pre-trained encoder.
+    Modified to work with RGB+NDVI inputs only (no landcover).
+    Fixed to ensure output shape matches input shape.
+    Added custom IoU metric and combined loss function.
+
     Args:
-        input_shape: Shape of input images (RGB + NDVI + Land Cover)
-    
+        input_shape: Shape of input images (RGB + NDVI)
+        use_pretrained: Whether to use pre-trained MobileNetV2 as encoder
+
     Returns:
         Compiled Keras model
     """
     inputs = Input(input_shape)
-    
-    # Encoder
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(inputs)
-    conv1 = Conv2D(64, 3, activation='relu', padding='same')(conv1)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-    
-    conv2 = Conv2D(128, 3, activation='relu', padding='same')(pool1)
-    conv2 = Conv2D(128, 3, activation='relu', padding='same')(conv2)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-    
-    conv3 = Conv2D(256, 3, activation='relu', padding='same')(pool2)
-    conv3 = Conv2D(256, 3, activation='relu', padding='same')(conv3)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-    
-    # Bridge
-    conv4 = Conv2D(512, 3, activation='relu', padding='same')(pool3)
-    conv4 = Conv2D(512, 3, activation='relu', padding='same')(conv4)
-    
-    # Decoder
-    up5 = UpSampling2D(size=(2, 2))(conv4)
-    up5 = Conv2D(256, 2, activation='relu', padding='same')(up5)
-    merge5 = concatenate([conv3, up5], axis=3)
-    conv5 = Conv2D(256, 3, activation='relu', padding='same')(merge5)
-    conv5 = Conv2D(256, 3, activation='relu', padding='same')(conv5)
-    
-    up6 = UpSampling2D(size=(2, 2))(conv5)
-    up6 = Conv2D(128, 2, activation='relu', padding='same')(up6)
-    merge6 = concatenate([conv2, up6], axis=3)
-    conv6 = Conv2D(128, 3, activation='relu', padding='same')(merge6)
-    conv6 = Conv2D(128, 3, activation='relu', padding='same')(conv6)
-    
-    up7 = UpSampling2D(size=(2, 2))(conv6)
-    up7 = Conv2D(64, 2, activation='relu', padding='same')(up7)
-    merge7 = concatenate([conv1, up7], axis=3)
-    conv7 = Conv2D(64, 3, activation='relu', padding='same')(merge7)
-    conv7 = Conv2D(64, 3, activation='relu', padding='same')(conv7)
-    
+    print(f"Input shape: {input_shape}")
+
+    # Handle input with 4 channels (RGB + NDVI)
+    # MobileNetV2 expects 3 channels, so we'll extract the first 3 channels (RGB)
+    rgb_input = tf.keras.layers.Lambda(lambda x: x[:, :, :, :3])(inputs)
+
+    # Convert non-RGB channels (NDVI) to features with 1x1 convolutions
+    if input_shape[2] > 3:
+        other_channels = tf.keras.layers.Lambda(lambda x: x[:, :, :, 3:])(inputs)
+        other_features = Conv2D(16, 1, activation="relu")(other_channels)
+        print(f"NDVI features shape: {other_features.shape}")
+    else:
+        other_features = None
+
+    # Pre-trained encoder (MobileNetV2)
+    if use_pretrained:
+        # Create MobileNetV2 base model
+        base_model = MobileNetV2(
+            input_shape=(input_shape[0], input_shape[1], 3),
+            include_top=False,
+            weights="imagenet",
+        )
+
+        # Print layers information safely
+        for layer in base_model.layers:
+            try:
+                output_shape = layer.output_shape
+                if output_shape is None:
+                    output_shape = "Unknown"
+                print(f"Layer: {layer.name}, Output shape: {output_shape}")
+            except (AttributeError, IndexError):
+                print(f"Layer: {layer.name}, Output shape: Could not determine")
+
+        # Process RGB input through the model
+        features = base_model(rgb_input)
+        print(f"Base model output shape: {features.shape}")
+
+        # Bridge is the bottleneck feature map (smallest spatial dimension)
+        bridge = features
+        print(f"Bridge shape: {bridge.shape}")
+
+        # Upsampling path
+        # Upsampling block 1
+        x = Conv2DTranspose(256, 3, strides=2, padding="same", activation="relu")(
+            bridge
+        )
+        x = BatchNormalization()(x)
+        print(f"Upsampling 1 shape: {x.shape}")
+
+        # Upsampling block 2
+        x = Conv2DTranspose(128, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        print(f"Upsampling 2 shape: {x.shape}")
+
+        # Upsampling block 3
+        x = Conv2DTranspose(64, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        print(f"Upsampling 3 shape: {x.shape}")
+
+        # Upsampling block 4
+        x = Conv2DTranspose(32, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        print(f"Upsampling 4 shape: {x.shape}")
+
+        # Final upsampling block 5 - to ensure 64x64 output
+        x = Conv2DTranspose(32, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        print(f"Upsampling 5 shape: {x.shape}")
+
+        # Add NDVI features if available
+        if other_features is not None:
+            # Resize NDVI features to match current size
+            current_size = x.shape[1]
+            other_resized = Resizing(current_size, current_size)(other_features)
+            x = concatenate([x, other_resized])
+            print(f"After concatenation with NDVI features: {x.shape}")
+
+        # Additional convolutions to process the features
+        x = Conv2D(64, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(32, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+
+    else:
+        # Standard U-Net architecture
+        # Encoder
+        x = Conv2D(64, 3, activation="relu", padding="same")(inputs)
+        x = BatchNormalization()(x)
+        x = Conv2D(64, 3, activation="relu", padding="same")(x)
+        skip1 = x
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+
+        x = Conv2D(128, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(128, 3, activation="relu", padding="same")(x)
+        skip2 = x
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+
+        x = Conv2D(256, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(256, 3, activation="relu", padding="same")(x)
+        skip3 = x
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+
+        x = Conv2D(512, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(512, 3, activation="relu", padding="same")(x)
+        skip4 = x
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+
+        # Bridge
+        x = Conv2D(1024, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(1024, 3, activation="relu", padding="same")(x)
+
+        # Decoder with skip connections
+        x = Conv2DTranspose(512, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        x = concatenate([x, skip4])
+        x = Conv2D(512, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(512, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+
+        x = Conv2DTranspose(256, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        x = concatenate([x, skip3])
+        x = Conv2D(256, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(256, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+
+        x = Conv2DTranspose(128, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        x = concatenate([x, skip2])
+        x = Conv2D(128, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(128, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+
+        x = Conv2DTranspose(64, 3, strides=2, padding="same", activation="relu")(x)
+        x = BatchNormalization()(x)
+        x = concatenate([x, skip1])
+        x = Conv2D(64, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+        x = Conv2D(64, 3, activation="relu", padding="same")(x)
+        x = BatchNormalization()(x)
+
     # Output
-    outputs = Conv2D(1, 1, activation='sigmoid')(conv7)
-    
+    outputs = Conv2D(1, 1, activation="sigmoid")(x)
+    print(f"Final output shape: {outputs.shape}")
+
     model = Model(inputs=inputs, outputs=outputs)
-    model.compile(optimizer='adam', 
-                  loss='binary_crossentropy', 
-                  metrics=['accuracy', tf.keras.metrics.IoU(num_classes=2, target_class_ids=[1])])
-    
+
+    # Compile with combined loss and custom IoU metrics at different thresholds
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+        loss=combined_loss,
+        metrics=[
+            "accuracy",
+            tf.keras.metrics.Recall(name="recall"),
+            tf.keras.metrics.Precision(name="precision"),
+            make_iou_threshold(0.1),
+            make_iou_threshold(0.5),
+        ],
+    )
+
     return model
