@@ -9,37 +9,116 @@ from sklearn.metrics import (
 )
 import seaborn as sns
 import argparse
-from model import build_forest_detection_model
+
+def dice_loss(y_true, y_pred):
+    """Dice loss function for segmentation"""
+    smooth = 1.0
+    y_true_f = tf.reshape(y_true, [-1])
+    y_pred_f = tf.reshape(y_pred, [-1])
+    intersection = tf.reduce_sum(y_true_f * y_pred_f)
+    return 1.0 - (2.0 * intersection + smooth) / (
+        tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f) + smooth
+    )
+
+
+def combined_loss(y_true, y_pred):
+    """Combination of binary crossentropy and dice loss"""
+    bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+    dice = dice_loss(y_true, y_pred)
+    return bce + dice
+
+
+# Define custom IoU metric with threshold
+def custom_iou(y_true, y_pred, threshold=0.5):
+    # Apply threshold to predictions
+    y_pred = tf.cast(y_pred > threshold, tf.float32)
+
+    # Calculate intersection and union
+    intersection = tf.reduce_sum(y_true * y_pred, axis=[1, 2, 3])
+    union = (
+        tf.reduce_sum(y_true, axis=[1, 2, 3])
+        + tf.reduce_sum(y_pred, axis=[1, 2, 3])
+        - intersection
+    )
+
+    # Add small epsilon to avoid division by zero
+    iou = tf.reduce_mean((intersection + 1e-7) / (union + 1e-7))
+    return iou
+
+
+# Create a function to make a custom IoU with a specific threshold
+def make_iou_threshold(threshold):
+    def iou_threshold(y_true, y_pred):
+        return custom_iou(y_true, y_pred, threshold)
+
+    iou_threshold.__name__ = f"iou_threshold_{threshold}"
+    return iou_threshold
+
+
+def load_model_with_custom_objects(model_path):
+    custom_objects = {
+        "dice_loss": dice_loss,
+        "combined_loss": combined_loss,
+        "custom_iou": custom_iou,
+        "iou_threshold_0.1": make_iou_threshold(0.1),
+        "iou_threshold_0.5": make_iou_threshold(0.5),
+    }
+
+    try:
+        # Try loading the model with custom objects
+        model = tf.keras.models.load_model(model_path, custom_objects=custom_objects)
+        print("Model loaded successfully with custom objects")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        try:
+            # Try loading without compiling
+            model = tf.keras.models.load_model(model_path, compile=False)
+            print("Model loaded without compilation")
+
+            # Recompile with custom objects
+            model.compile(
+                optimizer="adam",
+                loss=combined_loss,
+                metrics=[
+                    "accuracy",
+                    tf.keras.metrics.Recall(name="recall"),
+                    tf.keras.metrics.Precision(name="precision"),
+                    make_iou_threshold(0.1),
+                    make_iou_threshold(0.5),
+                ],
+            )
+            print("Model recompiled with custom loss and metrics")
+        except Exception as e2:
+            raise Exception(f"Failed to load model: {e2}")
+
+    return model
 
 
 def load_dataset(data_dir):
-    """Load features and masks from .npy files"""
     features = np.load(os.path.join(data_dir, "X_features.npy"))
     masks = np.load(os.path.join(data_dir, "y_masks.npy"))
     return features, masks
 
-    DATA_DIR = "../../../data/processed/processed_ndvi_rgb/image_datasets"
 
 def evaluate_model(model, X_test, y_test):
-    """Evaluate the model and return metrics"""
     print("Evaluating model...")
     metrics = model.evaluate(X_test, y_test, verbose=1)
 
-    # Print metrics
     print("Test Metrics:")
     for name, value in zip(model.metrics_names, metrics):
         print(f"{name}: {value:.4f}")
 
-    # Get predictions
     y_pred = model.predict(X_test)
 
     return metrics, y_pred
 
 
 def plot_precision_recall_curve(y_true_flat, y_pred_flat, save_path=None):
-    """Plot precision-recall curve"""
-    precision, recall, thresholds = precision_recall_curve(y_true_flat, y_pred_flat)
-    average_precision = average_precision_score(y_true_flat, y_pred_flat)
+    y_true_binary = (y_true_flat > 0.5).astype(int)
+
+    # Keep predictions as continuous for precision-recall curve
+    precision, recall, thresholds = precision_recall_curve(y_true_binary, y_pred_flat)
+    average_precision = average_precision_score(y_true_binary, y_pred_flat)
 
     plt.figure(figsize=(10, 8))
     plt.plot(recall, precision, lw=2, label=f"PR curve (AP = {average_precision:.3f})")
@@ -61,9 +140,11 @@ def plot_precision_recall_curve(y_true_flat, y_pred_flat, save_path=None):
 
 
 def plot_confusion_matrix(y_true_flat, y_pred_flat, threshold=0.5, save_path=None):
-    """Plot confusion matrix"""
+    # Convert both to binary format
+    y_true_binary = (y_true_flat > 0.5).astype(int)
     y_pred_binary = (y_pred_flat > threshold).astype(int)
-    cm = confusion_matrix(y_true_flat, y_pred_binary)
+
+    cm = confusion_matrix(y_true_binary, y_pred_binary)
 
     plt.figure(figsize=(10, 8))
     sns.heatmap(
@@ -84,7 +165,6 @@ def plot_confusion_matrix(y_true_flat, y_pred_flat, threshold=0.5, save_path=Non
     else:
         plt.show()
 
-    # Calculate metrics from confusion matrix
     tn, fp, fn, tp = cm.ravel()
     accuracy = (tp + tn) / (tp + tn + fp + fn)
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0
@@ -103,7 +183,6 @@ def plot_confusion_matrix(y_true_flat, y_pred_flat, threshold=0.5, save_path=Non
 
 
 def visualize_predictions(X_test, y_test, y_pred, num_samples=10, save_dir=None):
-    """Visualize predictions vs ground truth"""
     # Get random indices
     indices = np.random.choice(
         len(X_test), min(num_samples, len(X_test)), replace=False
@@ -148,19 +227,10 @@ def calculate_forest_percentage(masks):
 
 
 def predict_on_new_image(model, image_path, output_path=None):
-    """Make prediction on a new image"""
-    # Load and preprocess the image
-    # This is a placeholder - you'll need to customize this based on your preprocessing steps
-    # For example, you may need to calculate NDVI and get land cover data
-
-    # Assuming image is loaded and preprocessed to match model input shape (64, 64, 5)
-    # image = preprocess_image(image_path)
-
-    # For demonstration purposes, let's just use a random tensor
     print(
         f"[WARNING] Using random tensor for demonstration. Implement actual image preprocessing."
     )
-    image = np.random.random((1, 64, 64, 4))  # RGB + NDVI (Land Cover skipped)
+    image = np.random.random((1, 64, 64, 4))  # RGB + NDVI
 
     # Make prediction
     prediction = model.predict(image)
@@ -229,9 +299,9 @@ def main():
     # Create output directory
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Load the model
+    # Load the model with custom loss and metrics
     print(f"Loading model from {args.model_path}")
-    model = tf.keras.models.load_model(args.model_path)
+    model = load_model_with_custom_objects(args.model_path)
 
     if args.single_image:
         # Predict on a single image
@@ -250,9 +320,16 @@ def main():
         y_true_flat = y_test.reshape(-1)
         y_pred_flat = y_pred.reshape(-1)
 
+        # Print shape information for debugging
+        print(f"y_true_flat shape: {y_true_flat.shape}")
+        print(f"y_true_flat range: Min={y_true_flat.min()}, Max={y_true_flat.max()}")
+        print(f"y_pred_flat shape: {y_pred_flat.shape}")
+        print(f"y_pred_flat range: Min={y_pred_flat.min()}, Max={y_pred_flat.max()}")
+
         # Plot precision-recall curve
         pr_curve_path = os.path.join(args.output_dir, "precision_recall_curve.png")
         plot_precision_recall_curve(y_true_flat, y_pred_flat, save_path=pr_curve_path)
+        print(f"Precision-recall curve saved to {pr_curve_path}")
 
         # Plot confusion matrix
         cm_path = os.path.join(
@@ -261,10 +338,12 @@ def main():
         plot_confusion_matrix(
             y_true_flat, y_pred_flat, threshold=args.threshold, save_path=cm_path
         )
+        print(f"Confusion matrix saved to {cm_path}")
 
         # Visualize predictions
         viz_dir = os.path.join(args.output_dir, "visualization")
         visualize_predictions(X_test, y_test, y_pred, num_samples=10, save_dir=viz_dir)
+        print(f"Visualization samples saved to {viz_dir}")
 
         # Calculate forest percentage
         true_forest_percentage = calculate_forest_percentage(y_test)
@@ -275,6 +354,21 @@ def main():
         print(
             f"Difference: {abs(true_forest_percentage - pred_forest_percentage):.2f}%"
         )
+
+        with open(os.path.join(args.output_dir, "summary_results.txt"), "w") as f:
+            f.write(f"Test Dataset: {args.test_dir}\n")
+            f.write(f"Model: {args.model_path}\n")
+            f.write(f"Classification Threshold: {args.threshold}\n\n")
+
+            f.write("Evaluation Metrics:\n")
+            for name, value in zip(model.metrics_names, metrics):
+                f.write(f"{name}: {value:.4f}\n")
+
+            f.write(f"\nTrue forest coverage: {true_forest_percentage:.2f}%\n")
+            f.write(f"Predicted forest coverage: {pred_forest_percentage:.2f}%\n")
+            f.write(
+                f"Difference: {abs(true_forest_percentage - pred_forest_percentage):.2f}%\n"
+            )
 
         print(f"All inference results saved to {args.output_dir}")
 
