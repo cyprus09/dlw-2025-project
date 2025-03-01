@@ -18,7 +18,7 @@ def get_carbon_content_from_coordinates(lat, lon):
 def calculate_carbon_content(climate_features, ndvi_data, elevation, eco_zone):
     """
     Calculate carbon content based on climate features, NDVI, elevation
-    and ecological zone using a purely formula-based approach (no ML models).
+    and ecological zone using a purely formula-based approach.
 
     Args:
         climate_features (dict): Dictionary containing climate variables
