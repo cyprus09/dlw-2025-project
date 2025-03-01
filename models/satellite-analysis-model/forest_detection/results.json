@@ -1,0 +1,25 @@
+{
+  "forest_coverage": {
+    "forest_coverage_threshold_0.1": 86.79,
+    "forest_coverage_threshold_0.3": 8.86,
+    "forest_coverage_threshold_0.5": 0.39,
+    "forest_coverage_threshold_0.7": 0.07,
+    "forest_coverage_threshold_0.9": 0.0,
+    "average_forest_coverage": 19.22
+  },
+  "pixel_statistics": {
+    "min_probability": 0.0006,
+    "max_probability": 0.8935,
+    "mean_probability": 0.1843,
+    "median_probability": 0.1737,
+    "std_probability": 0.0847
+  },
+  "connectivity": {
+    "forest_patches": 14,
+    "largest_patch_percentage": 0.05,
+    "average_patch_size_percentage": 0.03
+  },
+  "edge_metrics": {
+    "forest_edge_percentage": 0.39
+  }
+}
