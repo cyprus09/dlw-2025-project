@@ -1,7 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "./App";
-import Process from "./pages/Process";
+import CarbonInsights from "./pages/CarbonInsights";
 import Loading from "./pages/Loading";
+import Process from "./pages/Process";
 
 export const router = createBrowserRouter([
     {
@@ -13,7 +14,11 @@ export const router = createBrowserRouter([
         element: <Process />,
     },
     {
-        path: "/loading",
+        path: "/loading-output",
         element: <Loading />,
+    },
+    {
+        path: "/insights",
+        element: <CarbonInsights />,
     },
 ]);
