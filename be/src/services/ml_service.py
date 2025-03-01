@@ -18,9 +18,10 @@ class MLService:
         This is a placeholder implementation. Replace with actual ML model call.
         """
         print("Processing input data:", location_name)
-        lat, lon = get_coordinates_from_location_name(location_name)
-        if not lat or not lon:
+        coordinates = get_coordinates_from_location_name(location_name)
+        if not coordinates:
             raise ValueError("Invalid location coordinates")
+        lat, lon = coordinates
         # TODO: Replace with actual ML model API call
         result = {
             "co2_sequestration": 100,
